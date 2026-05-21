@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KoreSync - Biblioteca Unificada</title>
+  
+  <!-- Fontes Google (Inter e Material Icons) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <!-- Estilo Principal -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TELA DE AUTENTICAÇÃO (Oculta por padrão se logado) -->
+  <div id="auth-screen" class="auth-container hidden">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="material-symbols-outlined logo-icon">cloud_sync</span>
+        <h2>KoreSync</h2>
+        <p>Unifique a biblioteca do seu Kindle & KOReader</p>
+      </div>
+      
+      <!-- Formulário de Login/Registro -->
+      <form id="auth-form" class="auth-form">
+        <div class="input-group">
+          <label for="username">Usuário</label>
+          <input type="text" id="username" placeholder="Digite seu usuário" required autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Digite sua senha" required autocomplete="current-password">
+        </div>
+        
+        <div class="auth-actions">
+          <button type="submit" id="login-btn" class="btn btn-primary">Entrar</button>
+          <button type="button" id="register-btn" class="btn btn-secondary">Criar Conta</button>
+        </div>
+      </form>
+      <p id="auth-error" class="auth-error-msg hidden"></p>
+    </div>
+  </div>
+
+  <!-- TELA PRINCIPAL DA BIBLIOTECA -->
+  <div id="main-screen" class="main-container hidden">
+    
+    <!-- Cabeçalho Estilo Google -->
+    <header class="main-header">
+      <div class="header-brand">
+        <span class="material-symbols-outlined brand-icon">cloud_sync</span>
+        <span class="brand-name">KoreSync</span>
+      </div>
+      
+      <!-- Barra de Pesquisa Google Style -->
+      <div class="search-bar-container">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input type="text" id="search-input" placeholder="Pesquisar livros por título ou autor...">
+      </div>
+      
+      <!-- Painel do Usuário -->
+      <div class="user-panel">
+        <button id="dark-mode-toggle" class="icon-btn" title="Alternar Modo Escuro">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+        <span id="user-display" class="user-display">Usuário</span>
+        <button id="logout-btn" class="icon-btn-text" title="Sair da Conta">
+          <span class="material-symbols-outlined">logout</span>
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Área de Instruções de Sincronização (Especial para KOReader) -->
+    <section class="sync-info-section">
+      <div class="sync-info-card">
+        <div class="card-icon">
+          <span class="material-symbols-outlined">settings_ethernet</span>
+        </div>
+        <div class="card-text">
+          <h3>Como conectar seu Kindle & KOReader</h3>
+          <p>
+            Certifique-se de que o Kindle está na mesma rede Wi-Fi deste computador. No KOReader do seu Kindle:
+          </p>
+          <ul>
+            <li>
+              <strong>Progresso de Leitura:</strong> Vá em <em>Engrenagem (Configurações)</em> &gt; <em>Sincronizar Progresso</em> &gt; <em>Servidor de sincronização personalizado</em>. Digite a URL que aparece no terminal do servidor (ex: <code id="koreader-sync-url">http://...</code>). Depois, clique em <strong>Cadastrar/Entrar</strong> usando seu usuário e senha criados aqui!
+            </li>
+            <li>
+              <strong>Catálogo de Livros (OPDS):</strong> No KOReader, clique na <em>Lupa (Pesquisa/Catálogos)</em> &gt; <em>Catálogos OPDS</em> &gt; <em>Adicionar catálogo</em>. Digite o nome "KoreSync" e a URL do catálogo (ex: <code id="koreader-opds-url">http://.../opds</code>). Agora você poderá baixar todos os seus livros diretamente do Kindle!
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Layout Principal: Upload à Esquerda e Grid à Direita -->
+    <div class="content-layout">
+      
+      <!-- Coluna da Esquerda: Drag & Drop Upload -->
+      <aside class="sidebar-upload">
+        <div id="drop-zone" class="upload-drop-zone">
+          <span class="material-symbols-outlined upload-icon">cloud_upload</span>
+          <h3>Adicionar Novo Livro</h3>
+          <p>Arraste e solte o arquivo EPUB aqui</p>
+          <span class="file-limits">Apenas arquivos .epub</span>
+          <input type="file" id="file-input" accept=".epub" class="hidden-input">
+          <button id="browse-btn" class="btn btn-secondary">Procurar Arquivo</button>
+        </div>
+
+        <div id="upload-progress" class="upload-progress-card hidden">
+          <div class="progress-info">
+            <span id="upload-filename">livro.epub</span>
+            <span id="upload-percent">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div id="upload-bar-fill" class="upload-bar-fill" style="width: 0%;"></div>
+          </div>
+          <span id="upload-status-text">Enviando e extraindo metadados...</span>
+        </div>
+      </aside>
+
+      <!-- Coluna da Direita: Catálogo de Livros -->
+      <main class="catalog-main">
+        <div class="catalog-header">
+          <h2>Seus Livros</h2>
+          <span id="book-count" class="book-count">0 livros</span>
+        </div>
+
+        <!-- Grid de Cartões de Livros -->
+        <div id="books-grid" class="books-grid">
+          <!-- Carregando... -->
+          <div class="loading-state">
+            <span class="material-symbols-outlined spinner">sync</span>
+            <p>Carregando sua biblioteca...</p>
+          </div>
+        </div>
+
+        <!-- Tela de Biblioteca Vazia -->
+        <div id="empty-state" class="empty-state hidden">
+          <span class="material-symbols-outlined empty-icon">menu_book</span>
+          <h3>Sua biblioteca está vazia</h3>
+          <p>Adicione novos livros na área de upload ao lado para começar a ler e sincronizar!</p>
+        </div>
+      </main>
+      
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

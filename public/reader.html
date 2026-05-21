@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leitor KoreSync</title>
+  
+  <!-- Fontes Google (Inter e Material Icons) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <!-- Estilo do leitor (será complementado pelo style.css principal) -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- CDNs do EpubJS e JSZip (Locais para suporte 100% offline) -->
+  <script src="jszip.min.js"></script>
+  <script src="epub.min.js"></script>
+</head>
+<body class="reader-body">
+
+  <!-- Cabeçalho do Leitor (Google Style) -->
+  <header class="reader-header">
+    <div class="header-left">
+      <button id="back-btn" class="icon-btn" title="Voltar à Biblioteca">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div class="book-info-container">
+        <h1 id="book-title" class="reader-book-title">Carregando livro...</h1>
+        <p id="book-author" class="reader-book-author">Aguarde</p>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <!-- Status da Sincronização -->
+      <div id="sync-status" class="sync-status" title="Sincronizado">
+        <span class="material-symbols-outlined">cloud_done</span>
+        <span class="status-text">Sincronizado</span>
+      </div>
+
+      <!-- Tamanho da Fonte -->
+      <div class="font-controls">
+        <button id="font-decrease" class="icon-btn" title="Diminuir Fonte">
+          <span class="material-symbols-outlined">format_size</span>
+          <span style="font-size: 10px; margin-left: -2px;">-</span>
+        </button>
+        <button id="font-increase" class="icon-btn" title="Aumentar Fonte">
+          <span class="material-symbols-outlined">format_size</span>
+          <span style="font-size: 10px; margin-left: -2px;">+</span>
+        </button>
+      </div>
+
+      <!-- Temas de Leitura -->
+      <div class="theme-controls">
+        <button id="theme-light" class="theme-btn active" data-theme="light" title="Tema Claro">
+          <span class="dot light"></span>
+        </button>
+        <button id="theme-sepia" class="theme-btn" data-theme="sepia" title="Tema Sépia">
+          <span class="dot sepia"></span>
+        </button>
+        <button id="theme-dark" class="theme-btn" data-theme="dark" title="Tema Escuro">
+          <span class="dot dark"></span>
+        </button>
+      </div>
+
+      <!-- Controles de Visualização -->
+      <div class="view-controls">
+        <button id="layout-toggle" class="icon-btn" title="Alternar Página Única / Dupla">
+          <span class="material-symbols-outlined">menu_book</span>
+        </button>
+        <button id="fullscreen-toggle" class="icon-btn" title="Tela Cheia">
+          <span class="material-symbols-outlined">fullscreen</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Principal de Leitura -->
+  <main class="reader-main">
+    <!-- Botão Anterior -->
+    <button id="prev-btn" class="nav-arrow prev" title="Página Anterior">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    
+    <!-- Área de Visualização do EpubJS -->
+    <div id="viewer" class="reader-viewer"></div>
+    
+    <!-- Botão Próximo -->
+    <button id="next-btn" class="nav-arrow next" title="Próxima Página">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </main>
+
+  <!-- Barra de Progresso e Navegação Inferior -->
+  <footer class="reader-footer">
+    <div class="progress-bar-container">
+      <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+    </div>
+    <div class="footer-info">
+      <span id="page-indicator">Carregando páginas...</span>
+      <span id="percentage-indicator">0%</span>
+    </div>
+  </footer>
+
+  <script src="reader.js"></script>
+</body>
+</html>

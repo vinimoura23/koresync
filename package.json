@@ -1,0 +1,25 @@
+{
+  "name": "koresync",
+  "version": "1.0.0",
+  "description": "KOReader Sync Server, OPDS Catalog and Web Reader",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "koreader",
+    "sync",
+    "opds",
+    "epub",
+    "reader"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "adm-zip": "^0.5.12",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
