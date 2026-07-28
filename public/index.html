@@ -89,7 +89,16 @@
         <button id="dark-mode-toggle" class="icon-btn" title="Alternar Modo Escuro">
           <span class="material-symbols-outlined">dark_mode</span>
         </button>
-        <span id="user-display" class="user-display">Usuário</span>
+        <button id="settings-btn" class="icon-btn" title="Configurações">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div class="user-chip">
+          <div id="user-avatar" class="user-avatar">
+            <img id="user-avatar-img" class="hidden" alt="Foto de perfil">
+            <span id="user-avatar-initials"></span>
+          </div>
+          <span id="user-display" class="user-display">Usuário</span>
+        </div>
         <button id="logout-btn" class="icon-btn-text" title="Sair da Conta">
           <span class="material-symbols-outlined">logout</span>
           <span>Sair</span>
@@ -170,6 +179,89 @@
         </div>
       </main>
       
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES (Drawer lateral) -->
+  <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Configurações">
+    <div class="settings-panel">
+
+      <!-- Cabeçalho fixo do painel -->
+      <div class="settings-header">
+        <h2 class="settings-title">
+          <span class="material-symbols-outlined">settings</span>
+          Configurações
+        </h2>
+        <button id="settings-close-btn" class="icon-btn" title="Fechar configurações">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Seção: Foto de Perfil -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          <span class="material-symbols-outlined">account_circle</span>
+          Foto de Perfil
+        </h3>
+        <div class="settings-avatar-area">
+          <!-- Círculo com preview e overlay de câmera -->
+          <div id="settings-avatar-preview" class="settings-avatar-circle" title="Clique para trocar a foto">
+            <img id="settings-avatar-preview-img" class="hidden" alt="Foto de perfil">
+            <span id="settings-avatar-preview-initials"></span>
+            <div class="avatar-upload-overlay">
+              <span class="material-symbols-outlined">photo_camera</span>
+            </div>
+          </div>
+          <div class="settings-avatar-actions">
+            <p class="settings-avatar-hint">Foto redonda exibida no cabeçalho ao lado do seu nome. Armazenada localmente no navegador.</p>
+            <div class="settings-avatar-btns">
+              <button id="settings-avatar-upload-btn" class="btn btn-secondary btn-sm">
+                <span class="material-symbols-outlined">upload</span>
+                Escolher Foto
+              </button>
+              <button id="settings-avatar-remove-btn" class="btn btn-ghost btn-sm">
+                <span class="material-symbols-outlined">delete</span>
+                Remover
+              </button>
+            </div>
+            <input type="file" id="avatar-file-input" accept="image/*" class="hidden-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção: Conexão KOReader -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          <span class="material-symbols-outlined">devices</span>
+          Conexão KOReader / Kindle
+        </h3>
+        <div class="settings-connection-area">
+          <div class="connection-url-block">
+            <label>Servidor de Sincronização</label>
+            <div class="url-copy-row">
+              <code id="settings-sync-url">—</code>
+              <button class="copy-btn" data-copy-target="settings-sync-url" title="Copiar URL">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+          </div>
+          <div class="connection-url-block">
+            <label>Catálogo OPDS (Livros)</label>
+            <div class="url-copy-row">
+              <code id="settings-opds-url">—</code>
+              <button class="copy-btn" data-copy-target="settings-opds-url" title="Copiar URL">
+                <span class="material-symbols-outlined">content_copy</span>
+              </button>
+            </div>
+          </div>
+          <button id="test-connection-btn" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined">wifi_find</span>
+            Testar Conexão
+          </button>
+          <div id="connection-result" class="connection-result hidden"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 

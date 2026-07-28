@@ -198,6 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const regConfirmInput = document.getElementById('reg-confirm');
   const registerBtn = document.getElementById('register-btn');
 
+  // Configurações e Avatar
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsCloseBtn = document.getElementById('settings-close-btn');
+  const headerAvatarImg = document.getElementById('user-avatar-img');
+  const headerAvatarInitials = document.getElementById('user-avatar-initials');
+  const settingsAvatarPreviewImg = document.getElementById('settings-avatar-preview-img');
+  const settingsAvatarPreviewInitials = document.getElementById('settings-avatar-preview-initials');
+  const settingsAvatarCircle = document.getElementById('settings-avatar-preview');
+  const settingsAvatarUploadBtn = document.getElementById('settings-avatar-upload-btn');
+  const settingsAvatarRemoveBtn = document.getElementById('settings-avatar-remove-btn');
+  const avatarFileInput = document.getElementById('avatar-file-input');
+  const testConnectionBtn = document.getElementById('test-connection-btn');
+  const connectionResult = document.getElementById('connection-result');
+  const settingsSyncUrl = document.getElementById('settings-sync-url');
+  const settingsOpdsUrl = document.getElementById('settings-opds-url');
+
   const userDisplay = document.getElementById('user-display');
   const logoutBtn = document.getElementById('logout-btn');
   const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -375,14 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
     mainScreen.classList.remove('hidden');
     userDisplay.textContent = username;
     
-    // Atualizar URLs de instruções baseadas no host atual do navegador
+    // Atualizar URLs baseadas no host atual do navegador
     const currentHost = window.location.host;
     const currentProtocol = window.location.protocol;
     const baseUrl = `${currentProtocol}//${currentHost}`;
     
     syncUrlEl.textContent = baseUrl;
     opdsUrlEl.textContent = `${baseUrl}/opds`;
+    if (settingsSyncUrl) settingsSyncUrl.textContent = baseUrl;
+    if (settingsOpdsUrl) settingsOpdsUrl.textContent = `${baseUrl}/opds`;
 
+    loadAvatar(username);
     loadBooks();
   }
 
@@ -634,4 +654,187 @@ document.addEventListener('DOMContentLoaded', () => {
     xhr.setRequestHeader('x-auth-key', authKey);
     xhr.send(formData);
   }
+
+  // ==========================================
+  // CONFIGURAÇÕES: MODAL, AVATAR E CONEXÃO
+  // ==========================================
+
+  // Abrir / Fechar modal
+  settingsBtn.addEventListener('click', () => {
+    settingsSyncUrl.textContent = syncUrlEl.textContent || window.location.origin;
+    settingsOpdsUrl.textContent = opdsUrlEl.textContent || `${window.location.origin}/opds`;
+    connectionResult.classList.add('hidden');
+    loadAvatarIntoSettings();
+    settingsModal.classList.remove('hidden');
+  });
+
+  settingsCloseBtn.addEventListener('click', () => {
+    settingsModal.classList.add('hidden');
+  });
+
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) settingsModal.classList.add('hidden');
+  });
+
+  // Fechar com ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) {
+      settingsModal.classList.add('hidden');
+    }
+  });
+
+  // ---- Avatar ----
+
+  // Exibir avatar ou inicial no header
+  function loadAvatar(username) {
+    const stored = localStorage.getItem('koresync_avatar');
+    const initial = (username || '?').charAt(0).toUpperCase();
+    if (stored) {
+      headerAvatarImg.src = stored;
+      headerAvatarImg.classList.remove('hidden');
+      headerAvatarInitials.textContent = '';
+    } else {
+      headerAvatarImg.src = '';
+      headerAvatarImg.classList.add('hidden');
+      headerAvatarInitials.textContent = initial;
+    }
+  }
+
+  // Sincronizar preview no modal de configurações
+  function loadAvatarIntoSettings() {
+    const stored = localStorage.getItem('koresync_avatar');
+    const username = localStorage.getItem('koresync_user') || '?';
+    const initial = username.charAt(0).toUpperCase();
+    if (stored) {
+      settingsAvatarPreviewImg.src = stored;
+      settingsAvatarPreviewImg.classList.remove('hidden');
+      settingsAvatarPreviewInitials.textContent = '';
+    } else {
+      settingsAvatarPreviewImg.src = '';
+      settingsAvatarPreviewImg.classList.add('hidden');
+      settingsAvatarPreviewInitials.textContent = initial;
+    }
+  }
+
+  // Clicar no círculo também abre o seletor de arquivo
+  settingsAvatarCircle.addEventListener('click', () => avatarFileInput.click());
+  settingsAvatarUploadBtn.addEventListener('click', () => avatarFileInput.click());
+
+  avatarFileInput.addEventListener('change', () => {
+    const file = avatarFileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.onload = () => {
+        // Recorte centralizado + redimensionar para 200×200 (economiza espaço no localStorage)
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        const size = Math.min(img.width, img.height);
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+        const base64 = canvas.toDataURL('image/jpeg', 0.88);
+        localStorage.setItem('koresync_avatar', base64);
+        loadAvatar(localStorage.getItem('koresync_user') || '');
+        loadAvatarIntoSettings();
+        avatarFileInput.value = '';
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  settingsAvatarRemoveBtn.addEventListener('click', () => {
+    localStorage.removeItem('koresync_avatar');
+    loadAvatar(localStorage.getItem('koresync_user') || '');
+    loadAvatarIntoSettings();
+  });
+
+  // ---- Testar Conexão com o servidor ----
+
+  testConnectionBtn.addEventListener('click', async () => {
+    connectionResult.classList.add('hidden');
+    connectionResult.className = 'connection-result hidden';
+    testConnectionBtn.disabled = true;
+    testConnectionBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Testando...';
+
+    const lines = [];
+
+    // 1. Ping ao servidor
+    try {
+      const t0 = Date.now();
+      const res = await fetch('/healthcheck');
+      const ms = Date.now() - t0;
+      if (res.ok) {
+        lines.push(`✅ Servidor KoreSync online <span class="test-latency">${ms}ms</span>`);
+      } else {
+        lines.push(`❌ Servidor respondeu com erro ${res.status}`);
+      }
+    } catch (_) {
+      lines.push('❌ Servidor KoreSync não encontrado (offline?)');
+    }
+
+    // 2. Verificar autenticação
+    try {
+      const u = localStorage.getItem('koresync_user');
+      const k = localStorage.getItem('koresync_auth_key');
+      if (u && k) {
+        const res = await fetch('/users/auth', { headers: { 'x-auth-user': u, 'x-auth-key': k } });
+        if (res.ok) {
+          lines.push(`✅ Autenticação OK — usuário <strong>${u}</strong>`);
+        } else {
+          lines.push('⚠️ Credenciais inválidas ou sessão expirada');
+        }
+      }
+    } catch (_) {
+      lines.push('❌ Erro ao verificar autenticação');
+    }
+
+    const allOk = lines.every(l => l.startsWith('✅'));
+    connectionResult.classList.remove('hidden');
+    connectionResult.classList.add(allOk ? 'ok' : 'error');
+    connectionResult.innerHTML = lines.join('<br>');
+
+    testConnectionBtn.disabled = false;
+    testConnectionBtn.innerHTML = '<span class="material-symbols-outlined">wifi_find</span> Testar Conexão';
+  });
+
+  // ---- Botões de copiar URL ----
+
+  document.querySelectorAll('.copy-btn[data-copy-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-copy-target');
+      const text = document.getElementById(id)?.textContent?.trim();
+      if (!text || text === '—') return;
+
+      const icon = btn.querySelector('.material-symbols-outlined');
+      const done = () => {
+        icon.textContent = 'check';
+        setTimeout(() => { icon.textContent = 'content_copy'; }, 1600);
+      };
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          legacyCopy(text); done();
+        });
+      } else {
+        legacyCopy(text); done();
+      }
+    });
+  });
+
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
 });

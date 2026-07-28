@@ -20,11 +20,15 @@ if (!fs.existsSync(COVERS_DIR)) fs.mkdirSync(COVERS_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Configurar o Multer para upload temporário
-const upload = multer({ dest: path.join(__dirname, 'data', 'temp') });
+const upload = multer({
+  dest: path.join(__dirname, 'data', 'temp'),
+  limits: { fileSize: 100 * 1024 * 1024 } // Limite de 100 MB por arquivo
+});
 
 // Helper para escapar XML
 function xmlEscape(str) {

@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let fontSizePercent = parseInt(localStorage.getItem('koresync_font_size')) || 100;
   let currentTheme = localStorage.getItem('koresync_theme') || 'light';
   let currentSpread = localStorage.getItem('koresync_spread') || 'none';
+  if (currentSpread === 'auto') currentSpread = 'none'; // migrar valor legado
   let saveProgressTimeout = null;
   let initialLocationLoaded = false;
   let serverProgress = null;
@@ -602,6 +603,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           html body a {
             color: ${colors.link} !important;
           }
+          /* Corrigir capas e imagens esticadas (fix cover stretch) */
+          img, svg {
+            max-width: 100% !important;
+            max-height: 82vh !important;
+            height: auto !important;
+            width: auto !important;
+            object-fit: contain !important;
+            display: block !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
         `;
       } catch (err) {
         console.warn('Erro ao acessar/estilizar iframe:', err);
@@ -618,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!rendition) return;
 
     if (currentSpread === 'none') {
-      currentSpread = 'auto';
+      currentSpread = 'always'; // 'always' = exatamente 2 colunas; 'auto' causava 3
     } else {
       currentSpread = 'none';
     }
