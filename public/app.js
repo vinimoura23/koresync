@@ -177,12 +177,26 @@ function md5(string) {
 document.addEventListener('DOMContentLoaded', () => {
   const authScreen = document.getElementById('auth-screen');
   const mainScreen = document.getElementById('main-screen');
-  const authForm = document.getElementById('auth-form');
-  const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
-  const loginBtn = document.getElementById('login-btn');
-  const registerBtn = document.getElementById('register-btn');
   const authError = document.getElementById('auth-error');
+
+  // Abas
+  const tabLogin = document.getElementById('tab-login');
+  const tabRegister = document.getElementById('tab-register');
+  const panelLogin = document.getElementById('panel-login');
+  const panelRegister = document.getElementById('panel-register');
+
+  // Formulário de Login
+  const loginForm = document.getElementById('login-form');
+  const loginUsernameInput = document.getElementById('login-username');
+  const loginPasswordInput = document.getElementById('login-password');
+  const loginBtn = document.getElementById('login-btn');
+
+  // Formulário de Cadastro
+  const registerForm = document.getElementById('register-form');
+  const regUsernameInput = document.getElementById('reg-username');
+  const regPasswordInput = document.getElementById('reg-password');
+  const regConfirmInput = document.getElementById('reg-confirm');
+  const registerBtn = document.getElementById('register-btn');
 
   const userDisplay = document.getElementById('user-display');
   const logoutBtn = document.getElementById('logout-btn');
@@ -232,6 +246,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Lógica de Troca de Abas
+  function switchTab(activeTab) {
+    hideError();
+    if (activeTab === 'login') {
+      tabLogin.classList.add('active');
+      tabLogin.setAttribute('aria-selected', 'true');
+      tabRegister.classList.remove('active');
+      tabRegister.setAttribute('aria-selected', 'false');
+      panelLogin.classList.remove('hidden');
+      panelRegister.classList.add('hidden');
+    } else {
+      tabRegister.classList.add('active');
+      tabRegister.setAttribute('aria-selected', 'true');
+      tabLogin.classList.remove('active');
+      tabLogin.setAttribute('aria-selected', 'false');
+      panelRegister.classList.remove('hidden');
+      panelLogin.classList.add('hidden');
+    }
+  }
+
+  tabLogin.addEventListener('click', () => switchTab('login'));
+  tabRegister.addEventListener('click', () => switchTab('register'));
+
   // 1. Checar Autenticação Inicial
   const savedUser = localStorage.getItem('koresync_user');
   const savedAuthKey = localStorage.getItem('koresync_auth_key');
@@ -243,24 +280,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Ações de Autenticação
-  loginBtn.addEventListener('click', async (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!authForm.reportValidity()) return;
+    if (!loginForm.reportValidity()) return;
 
-    const username = usernameInput.value.trim();
-    const plainPassword = passwordInput.value;
-    const passwordHash = md5(plainPassword); // MD5 Hashing local
+    const username = loginUsernameInput.value.trim();
+    const passwordHash = md5(loginPasswordInput.value);
 
-    await handleAuth('/users/auth', username, passwordHash);
+    await handleAuth('/users/auth', username, passwordHash, false);
   });
 
-  registerBtn.addEventListener('click', async (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!authForm.reportValidity()) return;
+    if (!registerForm.reportValidity()) return;
 
-    const username = usernameInput.value.trim();
-    const plainPassword = passwordInput.value;
-    const passwordHash = md5(plainPassword); // MD5 Hashing local
+    if (regPasswordInput.value !== regConfirmInput.value) {
+      showError('As senhas não coincidem.');
+      return;
+    }
+
+    const username = regUsernameInput.value.trim();
+    const passwordHash = md5(regPasswordInput.value);
 
     await handleAuth('/users/create', username, passwordHash, true);
   });
@@ -324,7 +364,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function showAuthScreen() {
     authScreen.classList.remove('hidden');
     mainScreen.classList.add('hidden');
-    passwordInput.value = '';
+    loginPasswordInput.value = '';
+    regPasswordInput.value = '';
+    regConfirmInput.value = '';
+    switchTab('login');
   }
 
   function showMainScreen(username) {

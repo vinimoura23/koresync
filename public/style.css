@@ -233,6 +233,53 @@ body {
   margin-top: 24px;
 }
 
+/* Abas de Login / Cadastro */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--google-gray-border);
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-gray);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.auth-tab:hover {
+  color: var(--google-blue);
+  background-color: var(--google-blue-light);
+  border-radius: 4px 4px 0 0;
+}
+
+.auth-tab.active {
+  color: var(--google-blue);
+  border-bottom-color: var(--google-blue);
+}
+
+.auth-panel {
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: 8px;
+}
+
 .btn {
   display: inline-flex;
   justify-content: center;

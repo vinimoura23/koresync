@@ -21,25 +21,49 @@
       <div class="auth-logo">
         <span class="material-symbols-outlined logo-icon">cloud_sync</span>
         <h2>KoreSync</h2>
-        <p>Unifique a biblioteca do seu Kindle & KOReader</p>
+        <p>Unifique a biblioteca do seu Kindle &amp; KOReader</p>
       </div>
-      
-      <!-- Formulário de Login/Registro -->
-      <form id="auth-form" class="auth-form">
-        <div class="input-group">
-          <label for="username">Usuário</label>
-          <input type="text" id="username" placeholder="Digite seu usuário" required autocomplete="username">
-        </div>
-        <div class="input-group">
-          <label for="password">Senha</label>
-          <input type="password" id="password" placeholder="Digite sua senha" required autocomplete="current-password">
-        </div>
-        
-        <div class="auth-actions">
-          <button type="submit" id="login-btn" class="btn btn-primary">Entrar</button>
-          <button type="button" id="register-btn" class="btn btn-secondary">Criar Conta</button>
-        </div>
-      </form>
+
+      <!-- Abas de Login / Cadastro -->
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" class="auth-tab active" role="tab" aria-selected="true" aria-controls="panel-login">Entrar</button>
+        <button id="tab-register" class="auth-tab" role="tab" aria-selected="false" aria-controls="panel-register">Criar Conta</button>
+      </div>
+
+      <!-- Painel de Login -->
+      <div id="panel-login" class="auth-panel" role="tabpanel" aria-labelledby="tab-login">
+        <form id="login-form" class="auth-form">
+          <div class="input-group">
+            <label for="login-username">Usuário</label>
+            <input type="text" id="login-username" placeholder="Digite seu usuário" required autocomplete="username">
+          </div>
+          <div class="input-group">
+            <label for="login-password">Senha</label>
+            <input type="password" id="login-password" placeholder="Digite sua senha" required autocomplete="current-password">
+          </div>
+          <button type="submit" id="login-btn" class="btn btn-primary btn-full">Entrar</button>
+        </form>
+      </div>
+
+      <!-- Painel de Cadastro -->
+      <div id="panel-register" class="auth-panel hidden" role="tabpanel" aria-labelledby="tab-register">
+        <form id="register-form" class="auth-form">
+          <div class="input-group">
+            <label for="reg-username">Usuário</label>
+            <input type="text" id="reg-username" placeholder="Escolha um nome de usuário" required autocomplete="username">
+          </div>
+          <div class="input-group">
+            <label for="reg-password">Senha</label>
+            <input type="password" id="reg-password" placeholder="Crie uma senha" required autocomplete="new-password">
+          </div>
+          <div class="input-group">
+            <label for="reg-confirm">Confirmar Senha</label>
+            <input type="password" id="reg-confirm" placeholder="Repita a senha" required autocomplete="new-password">
+          </div>
+          <button type="submit" id="register-btn" class="btn btn-primary btn-full">Criar Conta</button>
+        </form>
+      </div>
+
       <p id="auth-error" class="auth-error-msg hidden"></p>
     </div>
   </div>
