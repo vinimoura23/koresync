@@ -14,9 +14,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const bookId = urlParams.get('id');
 
+  function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let iconName = 'info';
+    if (type === 'success') iconName = 'check_circle';
+    if (type === 'error') iconName = 'error';
+
+    toast.innerHTML = `
+      <span class="material-symbols-outlined">${iconName}</span>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('toast-out');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 200);
+    }, duration);
+  }
+
   if (!bookId) {
-    alert('Nenhum livro selecionado!');
-    window.location.href = 'index.html';
+    showToast('Nenhum livro selecionado!', 'error');
+    setTimeout(() => { window.location.href = 'index.html'; }, 1200);
     return;
   }
 
@@ -335,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       userMsg = 'Erro: ' + err.message + '\n\nVerifique se o arquivo do livro EPUB importado é válido e não está corrompido.';
     }
 
-    alert('Não foi possível abrir o livro!\n\n' + userMsg + '\n\n(Consulte o console F12 do navegador para detalhes técnicos)');
+    showToast('Não foi possível abrir o livro! ' + userMsg, 'error', 6000);
   }
 
   // Função para mapear localização do EpubJS para XPointer do KOReader

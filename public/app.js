@@ -215,6 +215,67 @@ document.addEventListener('DOMContentLoaded', () => {
   const settingsSyncUrl = document.getElementById('settings-sync-url');
   const settingsOpdsUrl = document.getElementById('settings-opds-url');
 
+  // Sistema de Toast Notifications (substitui alert)
+  function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let iconName = 'info';
+    if (type === 'success') iconName = 'check_circle';
+    if (type === 'error') iconName = 'error';
+
+    toast.innerHTML = `
+      <span class="material-symbols-outlined">${iconName}</span>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('toast-out');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 200);
+    }, duration);
+  }
+
+  // Modal de Confirmação customizado (substitui confirm)
+  const confirmModal = document.getElementById('confirm-modal');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+  const confirmOkBtn = document.getElementById('confirm-ok-btn');
+  let confirmCallback = null;
+
+  function showConfirmModal({ title = 'Confirmar ação', message = 'Tem certeza?', danger = false }, onConfirm) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmOkBtn.className = danger ? 'btn btn-primary btn-sm btn-danger' : 'btn btn-primary btn-sm';
+    confirmCallback = onConfirm;
+    confirmModal.classList.remove('hidden');
+  }
+
+  confirmCancelBtn.addEventListener('click', () => {
+    confirmModal.classList.add('hidden');
+    confirmCallback = null;
+  });
+
+  confirmOkBtn.addEventListener('click', () => {
+    confirmModal.classList.add('hidden');
+    if (confirmCallback) confirmCallback();
+    confirmCallback = null;
+  });
+
+  confirmModal.addEventListener('click', (e) => {
+    if (e.target === confirmModal) {
+      confirmModal.classList.add('hidden');
+      confirmCallback = null;
+    }
+  });
+
   const userDisplay = document.getElementById('user-display');
   const logoutBtn = document.getElementById('logout-btn');
   const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -522,11 +583,15 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = `reader.html?id=${book.id}`;
       });
 
-      card.querySelector('.delete-btn').addEventListener('click', async (e) => {
+      card.querySelector('.delete-btn').addEventListener('click', (e) => {
         e.stopPropagation();
-        if (confirm(`Tem certeza de que deseja excluir "${book.title}"?`)) {
+        showConfirmModal({
+          title: 'Excluir Livro',
+          message: `Tem certeza de que deseja excluir "${book.title}"?`,
+          danger: true
+        }, async () => {
           await deleteBook(book.id);
-        }
+        });
       });
 
       booksGrid.appendChild(card);
@@ -548,13 +613,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (res.ok) {
+        showToast('Livro excluído com sucesso!', 'success');
         loadBooks();
+      } else if (res.status === 403) {
+        showToast('Você não tem permissão para excluir este livro.', 'error');
       } else {
-        alert('Erro ao excluir livro do servidor.');
+        showToast('Erro ao excluir livro do servidor.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Erro de conexão ao tentar excluir o livro.');
+      showToast('Erro de conexão ao tentar excluir o livro.', 'error');
     }
   }
 
@@ -599,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Validar se é EPUB
     if (!file.name.endsWith('.epub')) {
-      alert('Apenas arquivos .epub são aceitos!');
+      showToast('Apenas arquivos .epub são aceitos!', 'error');
       return;
     }
 
@@ -638,15 +706,16 @@ document.addEventListener('DOMContentLoaded', () => {
     xhr.addEventListener('load', () => {
       uploadProgress.classList.add('hidden');
       if (xhr.status === 201) {
+        showToast('Livro enviado com sucesso!', 'success');
         loadBooks();
       } else {
-        alert('Erro ao enviar o livro ao servidor.');
+        showToast('Erro ao enviar o livro ao servidor.', 'error');
       }
     });
 
     xhr.addEventListener('error', () => {
       uploadProgress.classList.add('hidden');
-      alert('Erro de conexão no envio do arquivo.');
+      showToast('Erro de conexão no envio do arquivo.', 'error');
     });
 
     xhr.open('POST', '/api/books');

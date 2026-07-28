@@ -64,22 +64,24 @@ function createUser(username, md5Password) {
 }
 
 // Operações de Livros
-function addBook(book) {
+function addBook(book, username) {
   const db = readDb();
-  // Se o livro já existe pelo hash, atualiza
   const index = db.books.findIndex(b => b.id === book.id);
+  const bookWithOwner = { ...book, owner: username ? username.toLowerCase() : null };
   if (index >= 0) {
-    db.books[index] = { ...db.books[index], ...book };
+    db.books[index] = { ...db.books[index], ...bookWithOwner };
   } else {
-    db.books.push(book);
+    db.books.push(bookWithOwner);
   }
   writeDb(db);
-  return book;
+  return bookWithOwner;
 }
 
-function getBooks() {
+function getBooks(username) {
   const db = readDb();
-  return db.books;
+  if (!username) return db.books;
+  // Retorna livros do usuário + livros sem dono (migração de dados antigos)
+  return db.books.filter(b => !b.owner || b.owner === username.toLowerCase());
 }
 
 function getBook(id) {
@@ -87,33 +89,34 @@ function getBook(id) {
   return db.books.find(b => b.id === id);
 }
 
-function deleteBook(id) {
+function deleteBook(id, username) {
   const db = readDb();
   const index = db.books.findIndex(b => b.id === id);
-  if (index >= 0) {
-    const book = db.books[index];
-    db.books.splice(index, 1);
-    
-    // Remover o progresso associado ao livro
-    for (const key in db.progress) {
-      if (key.endsWith(`:${id}`)) {
-        delete db.progress[key];
-      }
-    }
+  if (index < 0) return null;
 
-    // Remover mapeamentos de hash associados a este livro
-    if (db.hash_mappings) {
-      for (const hash in db.hash_mappings) {
-        if (db.hash_mappings[hash] === id) {
-          delete db.hash_mappings[hash];
-        }
-      }
-    }
-    
-    writeDb(db);
-    return book;
+  const book = db.books[index];
+
+  // Verificar propriedade: apenas o dono pode deletar (livros sem dono são legáveis)
+  if (book.owner && username && book.owner !== username.toLowerCase()) {
+    return false; // sem permissão
   }
-  return null;
+
+  db.books.splice(index, 1);
+
+  // Remover o progresso associado ao livro
+  for (const key in db.progress) {
+    if (key.endsWith(`:${id}`)) delete db.progress[key];
+  }
+
+  // Remover mapeamentos de hash associados a este livro
+  if (db.hash_mappings) {
+    for (const hash in db.hash_mappings) {
+      if (db.hash_mappings[hash] === id) delete db.hash_mappings[hash];
+    }
+  }
+
+  writeDb(db);
+  return book;
 }
 
 // Função para resolver o ID real do livro (mapear hashes alternativos do KOReader como fastDigest)

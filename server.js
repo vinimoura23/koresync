@@ -193,7 +193,7 @@ app.get('/opds', (req, res) => {
 
 // Listar Livros + Progresso para o Web App
 app.get('/api/books', authMiddleware, (req, res) => {
-  const books = db.getBooks();
+  const books = db.getBooks(req.user.username);
   const progressList = db.getAllProgress(req.user.username);
   
   const result = books.map(b => {
@@ -251,7 +251,7 @@ app.post('/api/books', authMiddleware, upload.single('book'), (req, res) => {
       addedAt: Date.now()
     };
 
-    db.addBook(bookData);
+    db.addBook(bookData, req.user.username);
 
     res.status(201).json({
       success: true,
@@ -320,26 +320,39 @@ app.get('/books/:id/cover', (req, res) => {
 
 // Remover Livro
 app.delete('/api/books/:id', authMiddleware, (req, res) => {
-  const book = db.getBook(req.params.id);
-  if (!book) {
+  const deletedBook = db.deleteBook(req.params.id, req.user.username);
+  if (deletedBook === null) {
     return res.status(404).json({ error: 'Livro não encontrado' });
   }
-
-  // Deletar arquivo físico do livro
-  if (fs.existsSync(book.filepath)) {
-    try { fs.unlinkSync(book.filepath); } catch (_) {}
+  if (deletedBook === false) {
+    return res.status(403).json({ error: 'Você não tem permissão para excluir este livro' });
   }
 
-  // Deletar capa se houver
-  if (book.coverFilename) {
-    const coverPath = path.join(COVERS_DIR, book.coverFilename);
-    if (fs.existsSync(coverPath)) {
-      try { fs.unlinkSync(coverPath); } catch (_) {}
+  // Se nenhum outro usuário possuir o mesmo livro, remover arquivos físicos
+  const remainingBooks = db.getBooks();
+  const fileStillUsed = remainingBooks.some(b => b.id === req.params.id);
+  if (!fileStillUsed) {
+    if (fs.existsSync(deletedBook.filepath)) {
+      try { fs.unlinkSync(deletedBook.filepath); } catch (_) {}
+    }
+    if (deletedBook.coverFilename) {
+      const coverPath = path.join(COVERS_DIR, deletedBook.coverFilename);
+      if (fs.existsSync(coverPath)) {
+        try { fs.unlinkSync(coverPath); } catch (_) {}
+      }
     }
   }
 
-  db.deleteBook(req.params.id);
   res.json({ success: true });
+});
+
+// Handler para rotas inexistentes (404)
+app.use((req, res) => {
+  if (req.accepts('json')) {
+    res.status(404).json({ error: 'Rota não encontrada' });
+  } else {
+    res.status(404).type('txt').send('404 - Não encontrado');
+  }
 });
 
 // Iniciar o Servidor

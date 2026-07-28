@@ -1623,6 +1623,140 @@ body.dark-mode .btn-ghost:hover {
 }
 
 /* ==========================================
+   MODAL DE CONFIRMAÇÃO & TOASTS
+   ========================================== */
+.confirm-card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: modalPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.confirm-icon {
+  font-size: 28px;
+  color: #d93025;
+}
+
+.confirm-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.confirm-message {
+  font-size: 14px;
+  color: var(--text-gray);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-danger {
+  background-color: #d93025 !important;
+  color: #fff !important;
+  border-color: #d93025 !important;
+}
+
+.btn-danger:hover {
+  background-color: #b3261e !important;
+  border-color: #b3261e !important;
+}
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  animation: toastSlideIn 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.toast.toast-out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.toast-info {
+  background-color: #1e88e5;
+  color: #ffffff;
+}
+
+.toast-success {
+  background-color: #137333;
+  color: #ffffff;
+}
+
+.toast-error {
+  background-color: #d93025;
+  color: #ffffff;
+}
+
+.toast .material-symbols-outlined {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+body.dark-mode .confirm-card {
+  background: #1e1e1e;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .confirm-header h3 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .confirm-message {
+  color: #aaa;
+}
+
+/* ==========================================
    MÍDIA RESPONSIVA (CELULAR E TABLET)
    ========================================== */
 @media (max-width: 900px) {

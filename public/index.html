@@ -262,8 +262,23 @@
         </div>
       </div>
 
+  <!-- MODAL DE CONFIRMAÇÃO (Substitui confirm() nativo) -->
+  <div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-card">
+      <div class="confirm-header">
+        <span class="material-symbols-outlined confirm-icon" id="confirm-icon">warning</span>
+        <h3 id="confirm-title">Confirmar ação</h3>
+      </div>
+      <p id="confirm-message" class="confirm-message">Tem certeza?</p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        <button id="confirm-ok-btn" class="btn btn-primary btn-sm btn-danger">Confirmar</button>
+      </div>
     </div>
   </div>
+
+  <!-- CONTAINER DE TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>
