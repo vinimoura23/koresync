@@ -16,8 +16,10 @@ const PORT = process.env.PORT || 3000;
 // Garantir diretórios necessários
 const BOOKS_DIR = path.join(__dirname, 'data', 'books');
 const COVERS_DIR = path.join(__dirname, 'data', 'covers');
+const TEMP_DIR = path.join(__dirname, 'data', 'temp');
 if (!fs.existsSync(BOOKS_DIR)) fs.mkdirSync(BOOKS_DIR, { recursive: true });
 if (!fs.existsSync(COVERS_DIR)) fs.mkdirSync(COVERS_DIR, { recursive: true });
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json());
@@ -27,7 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Configurar o Multer para upload temporário
 const upload = multer({
-  dest: path.join(__dirname, 'data', 'temp'),
+  dest: TEMP_DIR,
   limits: { fileSize: 100 * 1024 * 1024 } // Limite de 100 MB por arquivo
 });
 
@@ -234,6 +236,7 @@ app.get('/api/books', authMiddleware, (req, res) => {
       title: b.title,
       author: b.author,
       filename: b.filename,
+      tags: b.tags || [],
       hasCover: !!b.coverFilename,
       addedAt: b.addedAt,
       progress: prog ? {
@@ -379,6 +382,70 @@ app.delete('/api/books/:id', authMiddleware, (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// Multer para upload de nova capa customizada
+const uploadCover = multer({
+  dest: TEMP_DIR,
+  limits: { fileSize: 15 * 1024 * 1024 } // 15 MB
+});
+
+// Editar Livro (Título, Autor, Tags e Capa)
+app.put('/api/books/:id', authMiddleware, uploadCover.single('cover'), (req, res) => {
+  const bookId = req.params.id;
+  const book = db.getBook(bookId);
+  if (!book) {
+    if (req.file) try { fs.unlinkSync(req.file.path); } catch (_) {}
+    return res.status(404).json({ error: 'Livro não encontrado' });
+  }
+
+  const updates = {};
+  if (req.body.title !== undefined) updates.title = req.body.title;
+  if (req.body.author !== undefined) updates.author = req.body.author;
+
+  if (req.body.tags !== undefined) {
+    try {
+      if (typeof req.body.tags === 'string') {
+        const raw = req.body.tags.trim();
+        updates.tags = raw.startsWith('[')
+          ? JSON.parse(raw)
+          : raw.split(',').map(t => t.trim()).filter(Boolean);
+      } else if (Array.isArray(req.body.tags)) {
+        updates.tags = req.body.tags;
+      }
+    } catch (_) {
+      updates.tags = [];
+    }
+  }
+
+  if (req.file) {
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const newCoverFilename = `${bookId}_custom_${Date.now()}${ext}`;
+    const newCoverPath = path.join(COVERS_DIR, newCoverFilename);
+    try {
+      fs.copyFileSync(req.file.path, newCoverPath);
+      fs.unlinkSync(req.file.path);
+
+      // Remover capa antiga se for customizada anterior
+      if (book.coverFilename && book.coverFilename.includes('_custom_')) {
+        const oldPath = path.join(COVERS_DIR, book.coverFilename);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch (_) {}
+        }
+      }
+
+      updates.coverFilename = newCoverFilename;
+    } catch (err) {
+      console.error('Erro ao salvar nova capa customizada:', err);
+    }
+  }
+
+  const updated = db.updateBook(bookId, updates, req.user.username);
+  if (updated === false) {
+    return res.status(403).json({ error: 'Você não tem permissão para editar este livro' });
+  }
+
+  res.json({ success: true, book: updated });
 });
 
 // ==========================================

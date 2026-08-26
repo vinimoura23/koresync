@@ -9,53 +9,67 @@ Tudo funciona de forma **100% offline**, rodando na sua rede Wi-Fi local sem dep
 ## ✨ Recursos Principais
 
 - **Sincronização Bidirecional Precisa**: Comece a ler no computador e continue exatamente no mesmo parágrafo no Kindle (e vice-versa), de forma automática ou manual.
-- **Catálogo OPDS Integrado**: Baixe seus livros diretamente pelo menu do KOReader no Kindle, sem necessidade de cabos USB ou transferências lentas.
+- **Catálogo OPDS Integrado**: Baixe seus livros diretamente pelo menu do KOReader no Kindle, sem fios ou cabos USB.
 - **Leitor Web Premium integrado**: Leitor embutido baseado em EpubJS com:
-  - Alternância rápida entre layouts de **Página Única** ou **Página Dupla** (spread).
-  - Controle de tamanho de fonte e **Modo Tela Cheia**.
+  - **Sumário Completo (TOC)** com suporte recursivo a capítulos e subcapítulos.
+  - Alternância rápida entre layouts de **Página Única** ou **Página Dupla** (spread de 2 colunas calibrado).
+  - Controle de tamanho de fonte, navegação por teclado e **Modo Tela Cheia** com tecla `ESC` inteligente.
   - Temas de leitura personalizados (**Claro**, **Sépia** e **Escuro**).
-  - Barra de progresso interativa e arrastável por mouse ou touch com feedback a 60fps.
-- **Gerenciamento de Biblioteca Web**:
-  - Upload simples por arrastar e soltar (Drag & Drop) com barra de progresso.
-  - Extração automática de metadados reais (Título, Autor) e capas dos arquivos `.epub`.
-  - **Modo Escuro Global** na biblioteca que lembra sua preferência.
-  - Visualização de porcentagem lida e dispositivo ativo por cartão de livro.
-- **Banco de Dados Atômico e Leve**: Armazenamento em arquivos JSON estruturados usando gravação atômica para evitar corrupção de dados e eliminar a necessidade de compilação de SQLite/bancos nativos (100% livre de erros de dependências).
+  - Barra de progresso interativa e sincronização com feedback visual.
+- **Gerenciamento Completo de Biblioteca**:
+  - **Coleções / Tags**: Organize seus livros em categorias (*"Harry Potter"*, *"Fantasia"*, *"Favoritos"*) com barra de filtros no topo.
+  - **Filtro de Leitura**: Oculte livros não lidos com 1 clique para focar no que está em andamento.
+  - **Editor de Metadados e Capas**: Altere título, autor, tags e envie novas capas personalizadas com orientações de proporção ideal (2:3).
+  - **Ordenação Dinâmica**: Ordene por data de adição, título (A→Z / Z→A) ou progresso de leitura (% lida).
+  - **Estatísticas de Leitura**: Acompanhe datas de adição, início e conclusão da leitura em cada cartão.
+  - **Upload Múltiplo**: Envie até 20 livros simultaneamente por drag & drop.
+  - **Backup & Restauração**: Exporte e importe backups completos em `.zip` contendo o banco de dados, livros e capas.
+  - **Perfil e Avatares**: Altere nome de usuário e senha, escolha avatares minimalistas padrão ou envie sua própria foto de perfil.
+- **Banco de Dados Atômico em RAM**: Cache em memória ultra rápido com gravação atômica em disco (`.tmp` → `.json`), seguro contra corrupções e sem necessidade de compilação de bancos pesados.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 ### Servidor (Backend)
-- **Node.js**: Plataforma de execução Javascript assíncrona.
-- **Express**: Framework web minimalista para rotas HTTP rápidas.
-- **Multer**: Middleware para processamento eficiente do upload de livros.
-- **Adm-Zip**: Biblioteca pura em JS para manipulação e extração rápida em memória de metadados/capas do arquivo compactado `.epub` (OPF e XML).
-- **Crypto & FS**: Módulos nativos para cálculo de hash MD5 (ID único do livro no KOReader) e operações atômicas no sistema de arquivos.
+- **Node.js** (v18+) & **Express**
+- **Multer** & **Adm-Zip**
+- **Crypto & FS** nativos
 
 ### Cliente (Frontend / Web Reader)
-- **HTML5 & CSS3 (Design System)**: Estilização moderna e responsiva baseada nas paletas oficiais do Google (Material Design), com efeitos de vidro (*glassmorphism*), layouts de grade flexíveis e transições suaves.
-- **Javascript Moderno**: Lógica do cliente 100% limpa, modular e assíncrona.
-- **EpubJS**: Biblioteca de alto desempenho para renderização e paginação dinâmica de arquivos EPUB no navegador dentro de sandboxes seguras (iframes).
+- **HTML5 & CSS3** (Material Design moderno com suporte a Modo Escuro)
+- **Javascript Moderno** (sem frameworks pesados ou etapas de build)
+- **EpubJS** local e otimizado
 
 ---
 
 ## 🚀 Instalação e Inicialização
 
-### Pré-requisitos
+### Opção A: Executar com Docker (Recomendado para Servidores/NAS)
+Se você possui Docker e Docker Compose instalados:
+
+```bash
+docker compose up -d
+```
+O KoreSync estará rodando em segundo plano na porta `3000` com persistência automática no diretório `./data`.
+
+---
+
+### Opção B: Executar Localmente com Node.js
+
+#### Pré-requisitos
 Certifique-se de ter o **Node.js** (versão **18** ou superior) instalado em sua máquina.
 
-### Passo 1: Instalar Dependências
-Navegue até a pasta do projeto e execute:
+#### Passo 1: Instalar Dependências
 ```bash
 npm install
 ```
 
-### Passo 2: Iniciar o Servidor
-Para iniciar a aplicação, basta rodar:
+#### Passo 2: Iniciar o Servidor
 ```bash
 npm start
 ```
+*(Para desenvolvimento com auto-reload: `npm run dev`)*
 
 O terminal exibirá os IPs locais detectados na sua rede Wi-Fi para que você configure seu Kindle com facilidade:
 ```text

@@ -162,27 +162,42 @@
             <h2>Seus Livros</h2>
             <span id="book-count" class="book-count">0 livros</span>
           </div>
-          <div class="sort-controls" role="group" aria-label="Ordenar livros">
-            <button class="sort-btn active" data-sort="date-desc" title="Mais recentes primeiro">
-              <span class="material-symbols-outlined">schedule</span>
+          <div class="catalog-header-actions">
+            <button id="hide-unread-toggle" class="filter-toggle-btn" title="Ocultar livros não lidos / não iniciados">
+              <span class="material-symbols-outlined">visibility_off</span>
+              <span class="filter-label">Ocultar não lidos</span>
             </button>
-            <button class="sort-btn" data-sort="title-asc" title="Título A → Z">
-              <span class="material-symbols-outlined">sort_by_alpha</span>
-              <span class="sort-label">A→Z</span>
-            </button>
-            <button class="sort-btn" data-sort="title-desc" title="Título Z → A">
-              <span class="material-symbols-outlined">sort_by_alpha</span>
-              <span class="sort-label">Z→A</span>
-            </button>
-            <button class="sort-btn" data-sort="progress-desc" title="Mais lidos primeiro">
-              <span class="material-symbols-outlined">trending_down</span>
-              <span class="sort-label">% ↓</span>
-            </button>
-            <button class="sort-btn" data-sort="progress-asc" title="Menos lidos primeiro">
-              <span class="material-symbols-outlined">trending_up</span>
-              <span class="sort-label">% ↑</span>
-            </button>
+            <div class="sort-controls" role="group" aria-label="Ordenar livros">
+              <button class="sort-btn active" data-sort="date-desc" title="Mais recentes primeiro">
+                <span class="material-symbols-outlined">schedule</span>
+              </button>
+              <button class="sort-btn" data-sort="title-asc" title="Título A → Z">
+                <span class="material-symbols-outlined">sort_by_alpha</span>
+                <span class="sort-label">A→Z</span>
+              </button>
+              <button class="sort-btn" data-sort="title-desc" title="Título Z → A">
+                <span class="material-symbols-outlined">sort_by_alpha</span>
+                <span class="sort-label">Z→A</span>
+              </button>
+              <button class="sort-btn" data-sort="progress-desc" title="Mais lidos primeiro">
+                <span class="material-symbols-outlined">trending_down</span>
+                <span class="sort-label">% ↓</span>
+              </button>
+              <button class="sort-btn" data-sort="progress-asc" title="Menos lidos primeiro">
+                <span class="material-symbols-outlined">trending_up</span>
+                <span class="sort-label">% ↑</span>
+              </button>
+            </div>
           </div>
+        </div>
+
+        <!-- Barra de Coleções / Tags -->
+        <div id="tags-bar" class="tags-filter-bar hidden">
+          <span class="tags-bar-label">
+            <span class="material-symbols-outlined">collections_bookmark</span>
+            Coleções:
+          </span>
+          <div id="tags-chips-container" class="tags-chips-container"></div>
         </div>
 
         <!-- Grid de Cartões de Livros -->
@@ -248,6 +263,11 @@
               </button>
             </div>
             <input type="file" id="avatar-file-input" accept="image/*" class="hidden-input">
+            <!-- Avatares Padrão Minimalistas -->
+            <div class="preset-avatars-area">
+              <span class="preset-avatars-label">Ou escolha um avatar minimalista:</span>
+              <div id="preset-avatars-list" class="preset-avatars-grid"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -341,6 +361,76 @@
 
     </div><!-- /.settings-panel -->
   </div><!-- /#settings-modal -->
+
+  <!-- MODAL DE EDIÇÃO DE LIVRO (Título, Autor, Tags e Capa) -->
+  <div id="edit-book-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Editar Livro">
+    <div class="edit-book-card">
+      <div class="edit-book-header">
+        <h3 class="edit-book-title">
+          <span class="material-symbols-outlined">edit_note</span>
+          Editar Livro
+        </h3>
+        <button id="edit-book-close-btn" class="icon-btn" title="Fechar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <form id="edit-book-form" class="edit-book-form">
+        <input type="hidden" id="edit-book-id">
+        
+        <div class="edit-book-layout">
+          <!-- Coluna da Capa -->
+          <div class="edit-cover-area">
+            <label class="edit-field-label">Capa do Livro</label>
+            <div id="edit-cover-preview" class="edit-cover-preview" title="Clique para escolher nova imagem de capa">
+              <img id="edit-cover-preview-img" class="hidden" alt="Prévia da Capa">
+              <div id="edit-cover-placeholder" class="edit-cover-placeholder">
+                <span class="material-symbols-outlined">menu_book</span>
+              </div>
+              <div class="edit-cover-overlay">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <span>Trocar Capa</span>
+              </div>
+            </div>
+            <input type="file" id="edit-cover-input" accept="image/*" class="hidden-input">
+            <div class="cover-dimensions-hint">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>Proporção ideal: 2:3</strong><br>
+                <span>Ex: 600x900px ou 800x1200px (JPG, PNG, WEBP)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna dos Metadados -->
+          <div class="edit-meta-area">
+            <div class="form-group">
+              <label for="edit-title-input" class="edit-field-label">Título</label>
+              <input type="text" id="edit-title-input" class="form-input" required placeholder="Título do livro">
+            </div>
+
+            <div class="form-group">
+              <label for="edit-author-input" class="edit-field-label">Autor</label>
+              <input type="text" id="edit-author-input" class="form-input" required placeholder="Nome do autor">
+            </div>
+
+            <div class="form-group">
+              <label for="edit-tags-input" class="edit-field-label">Coleções / Tags (separadas por vírgula)</label>
+              <input type="text" id="edit-tags-input" class="form-input" placeholder="Ex: Harry Potter, Fantasia, Lendo">
+              <span class="edit-hint-text">Crie coleções para filtrar seus livros na biblioteca</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="edit-book-actions">
+          <button type="button" id="edit-book-cancel-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+          <button type="submit" id="edit-book-save-btn" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined">save</span>
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL DE CONFIRMAÇÃO (Substitui confirm() nativo) -->
   <div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">

@@ -222,6 +222,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const profileConfirmPasswordInput = document.getElementById('profile-confirm-password-input');
   const profileSaveBtn = document.getElementById('profile-save-btn');
   const profileResult = document.getElementById('profile-result');
+  const presetAvatarsList = document.getElementById('preset-avatars-list');
+
+  // Filtros de Catálogo & Tags
+  const hideUnreadToggle = document.getElementById('hide-unread-toggle');
+  const tagsBar = document.getElementById('tags-bar');
+  const tagsChipsContainer = document.getElementById('tags-chips-container');
+
+  // Modal de Edição de Livro
+  const editBookModal = document.getElementById('edit-book-modal');
+  const editBookForm = document.getElementById('edit-book-form');
+  const editBookIdInput = document.getElementById('edit-book-id');
+  const editTitleInput = document.getElementById('edit-title-input');
+  const editAuthorInput = document.getElementById('edit-author-input');
+  const editTagsInput = document.getElementById('edit-tags-input');
+  const editCoverPreview = document.getElementById('edit-cover-preview');
+  const editCoverPreviewImg = document.getElementById('edit-cover-preview-img');
+  const editCoverPlaceholder = document.getElementById('edit-cover-placeholder');
+  const editCoverInput = document.getElementById('edit-cover-input');
+  const editBookCloseBtn = document.getElementById('edit-book-close-btn');
+  const editBookCancelBtn = document.getElementById('edit-book-cancel-btn');
+  const editBookSaveBtn = document.getElementById('edit-book-save-btn');
+
+  // Helper para escapar HTML e prevenir vulnerabilidades XSS
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   // Sistema de Toast Notifications (substitui alert)
   function showToast(message, type = 'info', duration = 3500) {
@@ -309,15 +341,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let booksList = [];
   let currentSort = 'date-desc'; // padrão: mais recentes primeiro
+  let activeTagFilter = null;
+  let hideUnread = false;
 
   // ---- Funções de Ordenação ----
   function sortBooks(books, sort) {
     const sorted = [...books];
     switch (sort) {
       case 'title-asc':
-        return sorted.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
       case 'title-desc':
-        return sorted.sort((a, b) => b.title.localeCompare(a.title, 'pt-BR'));
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'pt-BR'));
       case 'progress-desc':
         return sorted.sort((a, b) => {
           const pA = a.progress ? a.progress.percentage : -1;
@@ -338,19 +372,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Filtragem unificada de livros (Busca + Tags + Ocultar não lidos)
+  function getFilteredBooks() {
+    let list = [...booksList];
+
+    // 1. Busca textual
+    const query = searchInput.value.toLowerCase().trim();
+    if (query) {
+      list = list.filter(b =>
+        (b.title && b.title.toLowerCase().includes(query)) ||
+        (b.author && b.author.toLowerCase().includes(query)) ||
+        (Array.isArray(b.tags) && b.tags.some(t => t.toLowerCase().includes(query)))
+      );
+    }
+
+    // 2. Filtro de Coleções / Tags
+    if (activeTagFilter) {
+      list = list.filter(b =>
+        Array.isArray(b.tags) && b.tags.some(t => t.toLowerCase() === activeTagFilter.toLowerCase())
+      );
+    }
+
+    // 3. Ocultar livros não iniciados
+    if (hideUnread) {
+      list = list.filter(b => b.progress && b.progress.percentage > 0);
+    }
+
+    return sortBooks(list, currentSort);
+  }
+
+  // Renderizar a barra de tags / coleções
+  function renderTagsBar() {
+    if (!tagsBar || !tagsChipsContainer) return;
+
+    const tagCountMap = {};
+    booksList.forEach(b => {
+      if (Array.isArray(b.tags)) {
+        b.tags.forEach(t => {
+          const norm = String(t).trim();
+          if (norm) {
+            tagCountMap[norm] = (tagCountMap[norm] || 0) + 1;
+          }
+        });
+      }
+    });
+
+    const tags = Object.keys(tagCountMap).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    if (tags.length === 0) {
+      tagsBar.classList.add('hidden');
+      activeTagFilter = null;
+      return;
+    }
+
+    tagsBar.classList.remove('hidden');
+    tagsChipsContainer.innerHTML = '';
+
+    // Chip "Todas"
+    const allChip = document.createElement('button');
+    allChip.type = 'button';
+    allChip.className = `tag-chip ${activeTagFilter === null ? 'active' : ''}`;
+    allChip.innerHTML = `Todas <span class="tag-chip-count">${booksList.length}</span>`;
+    allChip.addEventListener('click', () => {
+      activeTagFilter = null;
+      updateCatalogView();
+    });
+    tagsChipsContainer.appendChild(allChip);
+
+    // Chips de cada Tag
+    tags.forEach(tag => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      const isActive = activeTagFilter && activeTagFilter.toLowerCase() === tag.toLowerCase();
+      chip.className = `tag-chip ${isActive ? 'active' : ''}`;
+      chip.innerHTML = `${escapeHtml(tag)} <span class="tag-chip-count">${tagCountMap[tag]}</span>`;
+      chip.addEventListener('click', () => {
+        activeTagFilter = isActive ? null : tag;
+        updateCatalogView();
+      });
+      tagsChipsContainer.appendChild(chip);
+    });
+  }
+
+  // Atualizar visualização do catálogo
+  function updateCatalogView() {
+    renderTagsBar();
+    renderBooks(getFilteredBooks());
+  }
+
   // Eventos dos botões de ordenação
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentSort = btn.getAttribute('data-sort');
-      const query = searchInput.value.toLowerCase().trim();
-      const filtered = query
-        ? booksList.filter(b => b.title.toLowerCase().includes(query) || b.author.toLowerCase().includes(query))
-        : booksList;
-      renderBooks(sortBooks(filtered, currentSort));
+      renderBooks(getFilteredBooks());
     });
   });
+
+  // Evento do botão de ocultar não lidos
+  if (hideUnreadToggle) {
+    hideUnreadToggle.addEventListener('click', () => {
+      hideUnread = !hideUnread;
+      hideUnreadToggle.classList.toggle('active', hideUnread);
+      const icon = hideUnreadToggle.querySelector('.material-symbols-outlined');
+      if (icon) {
+        icon.textContent = hideUnread ? 'visibility' : 'visibility_off';
+      }
+      hideUnreadToggle.querySelector('.filter-label').textContent = hideUnread ? 'Mostrando em andamento' : 'Ocultar não lidos';
+      renderBooks(getFilteredBooks());
+    });
+  }
 
   // Lógica Global do Modo Escuro (Dark Mode)
   const isGlobalDarkMode = localStorage.getItem('koresync_global_dark_mode') === 'true';
@@ -549,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (res.ok) {
         booksList = await res.json();
-        renderBooks(sortBooks(booksList, currentSort));
+        updateCatalogView();
       } else {
         booksGrid.innerHTML = '<p class="error-msg">Erro ao carregar livros do servidor.</p>';
       }
@@ -591,21 +723,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const device = book.progress ? book.progress.device : '';
       
       // Cores harmoniosas em HSL baseadas na primeira letra do título para capas sem imagem
-      const hue = (book.title.charCodeAt(0) * 12) % 360;
+      const rawTitle = book.title || 'Livro';
+      const hue = (rawTitle.charCodeAt(0) * 12) % 360;
       const letterCoverStyle = `background: linear-gradient(135deg, hsl(${hue}, 60%, 65%), hsl(${(hue+40)%360}, 65%, 45%));`;
       
       // HTML da Capa (Capa carregada ou Capa gerada em CSS)
+      const coverUrl = `/books/${book.id}/cover?t=${book.coverFilename || book.addedAt || ''}`;
       const coverHtml = book.hasCover
-        ? `<img class="book-cover-img" src="/books/${book.id}/cover" alt="Capa de ${book.title}" loading="lazy">`
+        ? `<img class="book-cover-img" src="${coverUrl}" alt="Capa de ${escapeHtml(rawTitle)}" loading="lazy">`
         : `<div class="book-cover-letter" style="${letterCoverStyle}">
-             <span class="cover-letter">${book.title.charAt(0).toUpperCase()}</span>
+             <span class="cover-letter">${escapeHtml(rawTitle.charAt(0).toUpperCase())}</span>
            </div>`;
+
+      // Tags / Coleções Pills
+      const tagsHtml = (Array.isArray(book.tags) && book.tags.length > 0)
+        ? `<div class="book-tags-list">
+             ${book.tags.map(t => `<span class="book-tag-pill" title="Coleção: ${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}
+           </div>`
+        : '';
 
       // Barra de progresso visível se já iniciado
       const progressHtml = pct > 0
         ? `<div class="book-progress-wrapper">
              <div class="progress-details">
-               <span class="device-name"><span class="material-symbols-outlined dev-icon">${device.includes('Kindle') ? 'tablet_android' : 'laptop_chromebook'}</span>${device}</span>
+               <span class="device-name"><span class="material-symbols-outlined dev-icon">${device.includes('Kindle') ? 'tablet_android' : 'laptop_chromebook'}</span>${escapeHtml(device)}</span>
                <span class="percent-text">${pct}%</span>
              </div>
              <div class="book-progress-bar">
@@ -642,14 +783,18 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="material-symbols-outlined">menu_book</span>
               Ler
             </button>
+            <button class="overlay-btn edit-btn" title="Editar Livro">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
             <button class="overlay-btn delete-btn" title="Remover Livro">
               <span class="material-symbols-outlined">delete</span>
             </button>
           </div>
         </div>
         <div class="book-info">
-          <h3 class="book-title" title="${book.title}">${book.title}</h3>
-          <p class="book-author" title="${book.author}">${book.author}</p>
+          <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+          <p class="book-author" title="${escapeHtml(book.author)}">${escapeHtml(book.author)}</p>
+          ${tagsHtml}
           ${progressHtml}
           ${statsHtml}
         </div>
@@ -658,6 +803,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Eventos dos botões do card
       card.querySelector('.read-btn').addEventListener('click', () => {
         window.location.href = `reader.html?id=${book.id}`;
+      });
+
+      card.querySelector('.edit-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditBookModal(book);
       });
 
       card.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -703,14 +853,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 4. Busca em Tempo Real (mantém ordenação atual)
+  // 4. Busca em Tempo Real (mantém filtros e ordenação ativos)
   searchInput.addEventListener('input', () => {
-    const query = searchInput.value.toLowerCase().trim();
-    const filtered = booksList.filter(book => 
-      book.title.toLowerCase().includes(query) || 
-      book.author.toLowerCase().includes(query)
-    );
-    renderBooks(sortBooks(filtered, currentSort));
+    renderBooks(getFilteredBooks());
   });
 
   // 5. Upload de Arquivos (Drag & Drop + Input File)
@@ -1195,15 +1340,190 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function legacyCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
+  // ---- Avatares Padrão Minimalistas ----
+  const PRESET_AVATARS = [
+    {
+      id: 'cat-black',
+      name: 'Gato Preto',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#2b2d42"/><polygon points="28,42 20,20 42,28" fill="#1b1c28"/><polygon points="72,42 80,20 58,28" fill="#1b1c28"/><circle cx="50" cy="54" r="30" fill="#1b1c28"/><ellipse cx="40" cy="50" rx="4" ry="6" fill="#81c784"/><ellipse cx="60" cy="50" rx="4" ry="6" fill="#81c784"/><polygon points="50,58 46,63 54,63" fill="#ffb4a2"/><path d="M44,67 Q50,71 56,67" stroke="#ffb4a2" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+    },
+    {
+      id: 'cat-orange',
+      name: 'Gato Laranja',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#f4a261"/><polygon points="28,42 20,20 42,28" fill="#e76f51"/><polygon points="72,42 80,20 58,28" fill="#e76f51"/><circle cx="50" cy="54" r="30" fill="#e76f51"/><ellipse cx="40" cy="50" rx="4" ry="6" fill="#264653"/><ellipse cx="60" cy="50" rx="4" ry="6" fill="#264653"/><polygon points="50,58 46,63 54,63" fill="#ffffff"/><path d="M44,67 Q50,71 56,67" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+    },
+    {
+      id: 'fox',
+      name: 'Raposa',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#e76f51"/><polygon points="25,40 18,18 42,26" fill="#b23a22"/><polygon points="75,40 82,18 58,26" fill="#b23a22"/><circle cx="50" cy="54" r="30" fill="#b23a22"/><polygon points="50,42 30,70 70,70" fill="#ffffff"/><circle cx="40" cy="52" r="4" fill="#264653"/><circle cx="60" cy="52" r="4" fill="#264653"/><circle cx="50" cy="62" r="4" fill="#264653"/></svg>`
+    },
+    {
+      id: 'owl',
+      name: 'Coruja Leitora',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#3d5a80"/><circle cx="50" cy="55" r="30" fill="#293241"/><circle cx="38" cy="48" r="12" fill="#e0fbfc" stroke="#ee6c4d" stroke-width="2.5"/><circle cx="62" cy="48" r="12" fill="#e0fbfc" stroke="#ee6c4d" stroke-width="2.5"/><line x1="50" y1="48" x2="50" y2="48" stroke="#ee6c4d" stroke-width="3"/><circle cx="38" cy="48" r="5" fill="#293241"/><circle cx="62" cy="48" r="5" fill="#293241"/><polygon points="50,54 45,64 55,64" fill="#ee6c4d"/></svg>`
+    },
+    {
+      id: 'book',
+      name: 'Livro Mágico',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#1a73e8"/><path d="M50,40 Q35,32 24,36 L24,70 Q35,66 50,74 Q65,66 76,70 L76,36 Q65,32 50,40 Z" fill="#ffffff"/><line x1="50" y1="40" x2="50" y2="74" stroke="#1a73e8" stroke-width="2.5"/><circle cx="50" cy="24" r="3" fill="#ffe082"/><polygon points="40,22 41,25 44,26 41,27 40,30 39,27 36,26 39,25" fill="#ffe082"/><polygon points="60,22 61,25 64,26 61,27 60,30 59,27 56,26 59,25" fill="#ffe082"/></svg>`
+    },
+    {
+      id: 'astronaut',
+      name: 'Astronauta',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#5e503f"/><circle cx="50" cy="50" r="28" fill="#eae0d5"/><rect x="32" y="38" width="36" height="24" rx="12" fill="#0a0908"/><ellipse cx="44" cy="45" rx="6" ry="3" fill="rgba(255,255,255,0.4)"/></svg>`
+    },
+    {
+      id: 'coffee',
+      name: 'Café & Leitura',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#8d6e63"/><rect x="32" y="46" width="36" height="26" rx="6" fill="#ffffff"/><path d="M68,52 C74,52 76,62 68,64" stroke="#ffffff" stroke-width="3.5" fill="none"/><path d="M40,38 Q42,34 40,30" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M50,38 Q52,34 50,30" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M60,38 Q62,34 60,30" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+    },
+    {
+      id: 'ghost',
+      name: 'Fantasminha',
+      svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="#2a9d8f"/><path d="M50,22 C36,22 30,36 30,52 L30,76 Q35,70 40,76 Q45,70 50,76 Q55,70 60,76 Q65,70 70,76 L70,52 C70,36 64,22 50,22 Z" fill="#ffffff"/><circle cx="44" cy="46" r="3.5" fill="#264653"/><circle cx="56" cy="46" r="3.5" fill="#264653"/><ellipse cx="50" cy="55" rx="3" ry="4" fill="#264653"/></svg>`
+    }
+  ];
+
+  function renderPresetAvatars() {
+    if (!presetAvatarsList) return;
+    presetAvatarsList.innerHTML = '';
+    PRESET_AVATARS.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'preset-avatar-btn';
+      btn.title = item.name;
+      btn.innerHTML = item.svg;
+      btn.addEventListener('click', () => {
+        const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`;
+        localStorage.setItem('koresync_avatar', dataUrl);
+        loadAvatar(localStorage.getItem('koresync_user') || '');
+        loadAvatarIntoSettings();
+        showToast(`Avatar "${item.name}" selecionado!`, 'success');
+      });
+      presetAvatarsList.appendChild(btn);
+    });
+  }
+
+  renderPresetAvatars();
+
+  // ==========================================
+  // MODAL DE EDIÇÃO DE LIVRO
+  // ==========================================
+  let selectedNewCoverFile = null;
+
+  function openEditBookModal(book) {
+    if (!editBookModal) return;
+    editBookIdInput.value = book.id;
+    editTitleInput.value = book.title || '';
+    editAuthorInput.value = book.author || '';
+    editTagsInput.value = (Array.isArray(book.tags) && book.tags.length > 0) ? book.tags.join(', ') : '';
+    selectedNewCoverFile = null;
+    if (editCoverInput) editCoverInput.value = '';
+
+    if (book.hasCover) {
+      editCoverPreviewImg.src = `/books/${book.id}/cover?t=${book.coverFilename || Date.now()}`;
+      editCoverPreviewImg.classList.remove('hidden');
+      editCoverPlaceholder.classList.add('hidden');
+    } else {
+      editCoverPreviewImg.src = '';
+      editCoverPreviewImg.classList.add('hidden');
+      editCoverPlaceholder.classList.remove('hidden');
+    }
+
+    editBookModal.classList.remove('hidden');
+    editTitleInput.focus();
+  }
+
+  function closeEditBookModal() {
+    if (editBookModal) editBookModal.classList.add('hidden');
+    selectedNewCoverFile = null;
+    if (editCoverInput) editCoverInput.value = '';
+  }
+
+  if (editBookCloseBtn) editBookCloseBtn.addEventListener('click', closeEditBookModal);
+  if (editBookCancelBtn) editBookCancelBtn.addEventListener('click', closeEditBookModal);
+  if (editBookModal) {
+    editBookModal.addEventListener('click', (e) => {
+      if (e.target === editBookModal) closeEditBookModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && editBookModal && !editBookModal.classList.contains('hidden')) {
+      closeEditBookModal();
+    }
+  });
+
+  if (editCoverPreview) {
+    editCoverPreview.addEventListener('click', () => {
+      if (editCoverInput) editCoverInput.click();
+    });
+  }
+
+  if (editCoverInput) {
+    editCoverInput.addEventListener('change', () => {
+      const file = editCoverInput.files[0];
+      if (!file) return;
+      selectedNewCoverFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        editCoverPreviewImg.src = evt.target.result;
+        editCoverPreviewImg.classList.remove('hidden');
+        editCoverPlaceholder.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (editBookForm) {
+    editBookForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const bookId = editBookIdInput.value;
+      const title = editTitleInput.value.trim();
+      const author = editAuthorInput.value.trim();
+      const tagsStr = editTagsInput.value.trim();
+      const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+      const username = localStorage.getItem('koresync_user');
+      const authKey = localStorage.getItem('koresync_auth_key');
+
+      editBookSaveBtn.disabled = true;
+      editBookSaveBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Salvando...';
+
+      try {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('author', author);
+        formData.append('tags', JSON.stringify(tags));
+        if (selectedNewCoverFile) {
+          formData.append('cover', selectedNewCoverFile);
+        }
+
+        const res = await fetch(`/api/books/${bookId}`, {
+          method: 'PUT',
+          headers: {
+            'x-auth-user': username,
+            'x-auth-key': authKey
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Livro atualizado com sucesso!', 'success');
+          closeEditBookModal();
+          await loadBooks();
+        } else {
+          showToast(data.error || 'Erro ao atualizar livro', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão ao salvar alterações', 'error');
+      } finally {
+        editBookSaveBtn.disabled = false;
+        editBookSaveBtn.innerHTML = '<span class="material-symbols-outlined">save</span> Salvar Alterações';
+      }
+    });
   }
 
 });

@@ -254,9 +254,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         },
         "body": {
           "background": "transparent !important",
-          "background-color": "transparent !important"
+          "background-color": "transparent !important",
+          "box-sizing": "border-box !important"
         }
       });
+
+      // Capturar teclas mesmo com foco dentro do iframe do livro
+      if (contents.document) {
+        contents.document.addEventListener('keyup', (e) => {
+          if (!rendition) return;
+          if (e.key === 'ArrowLeft') rendition.prev();
+          if (e.key === 'ArrowRight') rendition.next();
+          if (e.key === 'Escape') handleEscapeKey();
+        });
+      }
+
       // Reaplica o tema atual no epubJS
       rendition.themes.select(currentTheme);
       
@@ -559,13 +571,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (rendition) rendition.next();
   });
 
-  // Navegação por Teclado (Setas Direita/Esquerda)
+  function handleEscapeKey() {
+    if (tocOverlay && !tocOverlay.classList.contains('hidden')) {
+      closeToc();
+      return;
+    }
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      return;
+    }
+    window.location.href = 'index.html';
+  }
+
+  // Navegação por Teclado (Setas Direita/Esquerda e ESC para sair/fullscreen)
   document.addEventListener('keyup', e => {
     if (!rendition) return;
     if (e.key === 'ArrowLeft') {
       rendition.prev();
     } else if (e.key === 'ArrowRight') {
       rendition.next();
+    } else if (e.key === 'Escape') {
+      handleEscapeKey();
     }
   });
 

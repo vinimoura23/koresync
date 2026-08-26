@@ -131,7 +131,11 @@ function updateUser(username, { newUsername, newPassword }) {
 function addBook(book, username) {
   const db = readDb();
   const index = db.books.findIndex(b => b.id === book.id);
-  const bookWithOwner = { ...book, owner: username ? username.toLowerCase() : null };
+  const bookWithOwner = {
+    ...book,
+    tags: Array.isArray(book.tags) ? book.tags : [],
+    owner: username ? username.toLowerCase() : null
+  };
   if (index >= 0) {
     db.books[index] = { ...db.books[index], ...bookWithOwner };
   } else {
@@ -143,14 +147,43 @@ function addBook(book, username) {
 
 function getBooks(username) {
   const db = readDb();
-  if (!username) return db.books;
-  // Retorna livros do usuário + livros sem dono (migração de dados antigos)
-  return db.books.filter(b => !b.owner || b.owner === username.toLowerCase());
+  const list = !username
+    ? db.books
+    : db.books.filter(b => !b.owner || b.owner === username.toLowerCase());
+  return list.map(b => ({ ...b, tags: b.tags || [] }));
 }
 
 function getBook(id) {
   const db = readDb();
-  return db.books.find(b => b.id === id) || null;
+  const book = db.books.find(b => b.id === id);
+  if (!book) return null;
+  return { ...book, tags: book.tags || [] };
+}
+
+function updateBook(id, updates, username) {
+  const db = readDb();
+  const index = db.books.findIndex(b => b.id === id);
+  if (index < 0) return null;
+
+  const book = db.books[index];
+  if (book.owner && username && book.owner !== username.toLowerCase()) {
+    return false; // sem permissão
+  }
+
+  if (updates.title !== undefined) book.title = updates.title.trim();
+  if (updates.author !== undefined) book.author = updates.author.trim();
+  if (updates.tags !== undefined) {
+    book.tags = Array.isArray(updates.tags)
+      ? updates.tags.map(t => String(t).trim()).filter(Boolean)
+      : [];
+  }
+  if (updates.coverFilename !== undefined) {
+    book.coverFilename = updates.coverFilename;
+  }
+
+  db.books[index] = book;
+  writeDb(db);
+  return book;
 }
 
 function deleteBook(id, username) {
@@ -279,6 +312,7 @@ module.exports = {
   addBook,
   getBooks,
   getBook,
+  updateBook,
   deleteBook,
   resolveBookId,
   getProgress,
