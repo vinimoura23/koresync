@@ -1182,23 +1182,26 @@ body.dark-mode .backup-warning {
   position: relative;
   background-color: #ffffff; /* Atualizado via JS */
   overflow: hidden;
+  padding: 0 52px;
+  box-sizing: border-box;
 }
 
 .reader-viewer {
   flex: 1;
   height: 100%;
-  max-width: 820px;
+  max-width: 760px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 12px;
+  padding: 0;
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
 }
 
 .reader-viewer.spread-layout {
-  max-width: 1360px !important;
-  width: 96% !important;
-  padding: 0 12px;
+  max-width: 1400px !important;
+  width: 100% !important;
+  padding: 0;
 }
 
 /* Setas Flutuantes */
@@ -2396,44 +2399,60 @@ body.dark-mode .book-tag-pill {
    ========================================== */
 .edit-book-card {
   background: var(--white);
-  border-radius: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
   width: 90%;
-  max-width: 600px;
-  padding: 24px;
-  animation: modalScaleIn 0.2s ease forwards;
+  max-width: 620px;
+  padding: 28px;
+  animation: modalScaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  border: 1px solid var(--google-gray-border);
 }
 
 .edit-book-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   border-bottom: 1px solid var(--google-gray-border);
-  padding-bottom: 14px;
-  margin-bottom: 20px;
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+}
+
+.edit-book-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit-modal-icon {
+  font-size: 28px;
+  color: var(--google-blue);
+  background: #e8f0fe;
+  padding: 8px;
+  border-radius: 10px;
 }
 
 .edit-book-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-dark);
+  margin: 0;
+  line-height: 1.2;
 }
 
-.edit-book-title .material-symbols-outlined {
-  color: var(--google-blue);
+.edit-book-subtitle {
+  font-size: 12px;
+  color: var(--text-gray);
+  margin: 4px 0 0 0;
 }
 
 .edit-book-layout {
   display: flex;
-  gap: 24px;
-  margin-bottom: 20px;
+  gap: 26px;
+  margin-bottom: 22px;
 }
 
 .edit-cover-area {
-  width: 150px;
+  width: 144px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -2444,19 +2463,29 @@ body.dark-mode .book-tag-pill {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: var(--text-gray);
+  margin-bottom: 2px;
+  display: block;
 }
 
 .edit-cover-preview {
   aspect-ratio: 2 / 3;
-  width: 100%;
-  border-radius: 6px;
+  width: 144px;
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px dashed var(--google-gray-border);
+  border: 2px dashed rgba(26, 115, 232, 0.35);
   position: relative;
   cursor: pointer;
   background: var(--google-gray-bg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.edit-cover-preview:hover {
+  border-color: var(--google-blue);
+  box-shadow: 0 6px 18px rgba(26, 115, 232, 0.2);
+  transform: translateY(-2px);
 }
 
 .edit-cover-preview img {
@@ -2470,49 +2499,78 @@ body.dark-mode .book-tag-pill {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   color: var(--text-gray);
 }
 
 .edit-cover-placeholder .material-symbols-outlined {
-  font-size: 40px;
+  font-size: 38px;
+  color: #adb5bd;
+}
+
+.cover-placeholder-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-gray);
 }
 
 .edit-cover-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(26, 115, 232, 0.85);
   color: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 
 .edit-cover-preview:hover .edit-cover-overlay {
   opacity: 1;
 }
 
+.edit-cover-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 500 !important;
+}
+
 .cover-dimensions-hint {
   display: flex;
   align-items: flex-start;
-  gap: 5px;
-  font-size: 10px;
+  gap: 6px;
+  font-size: 11px;
   line-height: 1.35;
-  color: var(--text-gray);
-  background: var(--google-gray-bg);
-  padding: 6px 8px;
-  border-radius: 6px;
+  color: #1967d2;
+  background: #e8f0fe;
+  border: 1px solid rgba(26, 115, 232, 0.2);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.cover-dimensions-hint strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.cover-dimensions-hint p {
+  margin: 0;
+  font-size: 10px;
+  color: #5f6368;
 }
 
 .cover-dimensions-hint .material-symbols-outlined {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--google-blue);
   flex-shrink: 0;
   margin-top: 1px;
@@ -2522,13 +2580,54 @@ body.dark-mode .book-tag-pill {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+/* Inputs com Ícone Integrado */
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-icon .input-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 18px;
+  color: var(--text-gray);
+  pointer-events: none;
+  transition: color 0.18s ease;
+}
+
+.input-with-icon .form-input {
+  width: 100%;
+  padding: 10px 14px 10px 38px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--google-gray-border);
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  color: var(--text-dark);
+  transition: all 0.18s ease;
+}
+
+.input-with-icon .form-input:focus {
+  outline: none;
+  background-color: var(--white);
+  border-color: var(--google-blue);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.18);
+}
+
+.input-with-icon:focus-within .input-icon {
+  color: var(--google-blue);
 }
 
 .edit-hint-text {
   font-size: 11px;
   color: var(--text-gray);
-  margin-top: 2px;
+  margin-top: 4px;
+  display: block;
 }
 
 .edit-book-actions {
@@ -2536,23 +2635,58 @@ body.dark-mode .book-tag-pill {
   justify-content: flex-end;
   gap: 10px;
   border-top: 1px solid var(--google-gray-border);
-  padding-top: 16px;
+  padding-top: 18px;
 }
 
+/* Dark Mode do Modal de Edição */
 body.dark-mode .edit-book-card {
   background: #1e1e1e;
-  border: 1px solid #333;
+  border-color: #333333;
+}
+
+body.dark-mode .edit-modal-icon {
+  background: rgba(138, 180, 248, 0.14);
+  color: #8ab4f8;
 }
 
 body.dark-mode .edit-book-header,
 body.dark-mode .edit-book-actions {
-  border-color: #333;
+  border-color: #2c2d30;
 }
 
-body.dark-mode .edit-cover-preview,
-body.dark-mode .cover-dimensions-hint {
+body.dark-mode .edit-cover-preview {
   background: #252628;
+  border-color: rgba(138, 180, 248, 0.3);
+}
+
+body.dark-mode .cover-dimensions-hint {
+  background: rgba(138, 180, 248, 0.08);
+  border-color: rgba(138, 180, 248, 0.2);
+  color: #8ab4f8;
+}
+
+body.dark-mode .cover-dimensions-hint p {
+  color: #9aa0a6;
+}
+
+body.dark-mode .cover-dimensions-hint .material-symbols-outlined {
+  color: #8ab4f8;
+}
+
+body.dark-mode .input-with-icon .form-input {
+  background-color: #282a2d;
   border-color: #3e4042;
+  color: #e8eaed;
+}
+
+body.dark-mode .input-with-icon .form-input:focus {
+  background-color: #202124;
+  border-color: #8ab4f8;
+  box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.22);
+}
+
+body.dark-mode .input-with-icon:focus-within .input-icon {
+  color: #8ab4f8;
 }
 
 @media (max-width: 600px) {
@@ -2561,6 +2695,6 @@ body.dark-mode .cover-dimensions-hint {
     align-items: center;
   }
   .edit-cover-area {
-    width: 130px;
+    width: 144px;
   }
 }

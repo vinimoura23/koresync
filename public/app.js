@@ -240,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const editCoverPreviewImg = document.getElementById('edit-cover-preview-img');
   const editCoverPlaceholder = document.getElementById('edit-cover-placeholder');
   const editCoverInput = document.getElementById('edit-cover-input');
+  const editCoverBtn = document.getElementById('edit-cover-btn');
   const editBookCloseBtn = document.getElementById('edit-book-close-btn');
   const editBookCancelBtn = document.getElementById('edit-book-cancel-btn');
   const editBookSaveBtn = document.getElementById('edit-book-save-btn');
@@ -1456,6 +1457,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (editCoverPreview) {
     editCoverPreview.addEventListener('click', () => {
+      if (editCoverInput) editCoverInput.click();
+    });
+  }
+
+  if (editCoverBtn) {
+    editCoverBtn.addEventListener('click', () => {
       if (editCoverInput) editCoverInput.click();
     });
   }

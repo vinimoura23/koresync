@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentTheme = localStorage.getItem('koresync_theme') || 'light';
   let currentSpread = localStorage.getItem('koresync_spread') || 'none';
   if (currentSpread === 'auto') currentSpread = 'none'; // migrar valor legado
+  let currentLocationCfi = null;
   let saveProgressTimeout = null;
   let initialLocationLoaded = false;
   let serverProgress = null;
@@ -194,7 +195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     rendition = book.renderTo('viewer', {
       width: '100%',
       height: '100%',
-      spread: currentSpread, // página única ou dupla configurável
+      spread: currentSpread, // 'none' (página única) ou 'always' (página dupla)
+      minSpreadWidth: 0, // Ignora threshold fixo para respeitar spread em qualquer resolução
       allowScriptedContent: true
     });
 
@@ -394,6 +396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     rendition.on('relocated', location => {
       if (!initialLocationLoaded) return;
 
+      currentLocationCfi = location.start.cfi;
       currentSpineIndex = location.start.index;
       
       if (book.locations && book.locations.length > 0) {
@@ -743,23 +746,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   layoutToggleBtn.addEventListener('click', () => {
     if (!rendition) return;
 
-    if (currentSpread === 'none') {
-      currentSpread = 'always'; // 'always' = exatamente 2 colunas; 'auto' causava 3
-    } else {
-      currentSpread = 'none';
-    }
-
+    currentSpread = currentSpread === 'none' ? 'always' : 'none';
     localStorage.setItem('koresync_spread', currentSpread);
     updateLayoutButton();
     
-    // Atualiza a visualização do ePubJS
-    rendition.spread(currentSpread);
-    rendition.resize();
-    
-    // Forçar a injeção do tema direto em todos os iframes recriados após o reflow/spread
-    setTimeout(() => {
-      applyIframeThemeDirectly(currentTheme);
-    }, 150);
+    // Atualiza a visualização do ePubJS com threshold 0
+    rendition.spread(currentSpread, 0);
+
+    requestAnimationFrame(() => {
+      rendition.resize();
+      if (currentLocationCfi) {
+        rendition.display(currentLocationCfi);
+      }
+      setTimeout(() => {
+        rendition.resize();
+        applyIframeThemeDirectly(currentTheme);
+      }, 100);
+    });
   });
 
   // Alternar Tela Cheia nativa do navegador

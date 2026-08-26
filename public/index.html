@@ -366,14 +366,18 @@
   <div id="edit-book-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Editar Livro">
     <div class="edit-book-card">
       <div class="edit-book-header">
-        <h3 class="edit-book-title">
-          <span class="material-symbols-outlined">edit_note</span>
-          Editar Livro
-        </h3>
+        <div class="edit-book-header-left">
+          <span class="material-symbols-outlined edit-modal-icon">edit_square</span>
+          <div>
+            <h3 class="edit-book-title">Editar Livro</h3>
+            <p class="edit-book-subtitle">Atualize as informações e a capa do e-book</p>
+          </div>
+        </div>
         <button id="edit-book-close-btn" class="icon-btn" title="Fechar">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
+
       <form id="edit-book-form" class="edit-book-form">
         <input type="hidden" id="edit-book-id">
         
@@ -384,19 +388,26 @@
             <div id="edit-cover-preview" class="edit-cover-preview" title="Clique para escolher nova imagem de capa">
               <img id="edit-cover-preview-img" class="hidden" alt="Prévia da Capa">
               <div id="edit-cover-placeholder" class="edit-cover-placeholder">
-                <span class="material-symbols-outlined">menu_book</span>
+                <span class="material-symbols-outlined">auto_stories</span>
+                <span class="cover-placeholder-text">Sem capa</span>
               </div>
               <div class="edit-cover-overlay">
-                <span class="material-symbols-outlined">add_photo_alternate</span>
-                <span>Trocar Capa</span>
+                <span class="material-symbols-outlined">photo_camera</span>
+                <span>Alterar Imagem</span>
               </div>
             </div>
-            <input type="file" id="edit-cover-input" accept="image/*" class="hidden-input">
+            
+            <button type="button" id="edit-cover-btn" class="btn btn-secondary btn-sm edit-cover-btn">
+              <span class="material-symbols-outlined">upload</span>
+              Escolher Imagem
+            </button>
+            <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" class="hidden-input">
+            
             <div class="cover-dimensions-hint">
-              <span class="material-symbols-outlined">info</span>
+              <span class="material-symbols-outlined">aspect_ratio</span>
               <div>
-                <strong>Proporção ideal: 2:3</strong><br>
-                <span>Ex: 600x900px ou 800x1200px (JPG, PNG, WEBP)</span>
+                <strong>Proporção ideal 2:3</strong>
+                <p>Ex: 600×900px ou 800×1200px (JPG, PNG, WEBP)</p>
               </div>
             </div>
           </div>
@@ -404,27 +415,36 @@
           <!-- Coluna dos Metadados -->
           <div class="edit-meta-area">
             <div class="form-group">
-              <label for="edit-title-input" class="edit-field-label">Título</label>
-              <input type="text" id="edit-title-input" class="form-input" required placeholder="Título do livro">
+              <label for="edit-title-input" class="edit-field-label">Título do Livro</label>
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">title</span>
+                <input type="text" id="edit-title-input" class="form-input" required placeholder="Ex: Harry Potter e a Pedra Filosofal">
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="edit-author-input" class="edit-field-label">Autor</label>
-              <input type="text" id="edit-author-input" class="form-input" required placeholder="Nome do autor">
+              <label for="edit-author-input" class="edit-field-label">Autor(a)</label>
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">person</span>
+                <input type="text" id="edit-author-input" class="form-input" required placeholder="Ex: J.K. Rowling">
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="edit-tags-input" class="edit-field-label">Coleções / Tags (separadas por vírgula)</label>
-              <input type="text" id="edit-tags-input" class="form-input" placeholder="Ex: Harry Potter, Fantasia, Lendo">
-              <span class="edit-hint-text">Crie coleções para filtrar seus livros na biblioteca</span>
+              <label for="edit-tags-input" class="edit-field-label">Coleções / Tags</label>
+              <div class="input-with-icon">
+                <span class="material-symbols-outlined input-icon">label</span>
+                <input type="text" id="edit-tags-input" class="form-input" placeholder="Ex: Harry Potter, Fantasia, Favoritos">
+              </div>
+              <span class="edit-hint-text">Separe múltiplas tags por vírgula para criar coleções na biblioteca</span>
             </div>
           </div>
         </div>
 
         <div class="edit-book-actions">
-          <button type="button" id="edit-book-cancel-btn" class="btn btn-secondary btn-sm">Cancelar</button>
-          <button type="submit" id="edit-book-save-btn" class="btn btn-primary btn-sm">
-            <span class="material-symbols-outlined">save</span>
+          <button type="button" id="edit-book-cancel-btn" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="edit-book-save-btn" class="btn btn-primary">
+            <span class="material-symbols-outlined">check</span>
             Salvar Alterações
           </button>
         </div>
