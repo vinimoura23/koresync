@@ -217,57 +217,59 @@ app.get('/api/books', authMiddleware, (req, res) => {
   res.json(result);
 });
 
-// Upload de Livros
-app.post('/api/books', authMiddleware, upload.single('book'), (req, res) => {
-  if (!req.file) {
+// Upload de Livros (múltiplos simultâneos)
+app.post('/api/books', authMiddleware, upload.array('book', 20), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   }
 
-  const tempPath = req.file.path;
-  
-  try {
-    // 1. Calcular o MD5 hash do arquivo para ID único do KOReader
-    const fileBuffer = fs.readFileSync(tempPath);
-    const md5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
-    
-    const finalFilename = `${md5}.epub`;
-    const finalPath = path.join(BOOKS_DIR, finalFilename);
+  const results = [];
 
-    // Se o livro já existe, não precisamos duplicar o arquivo físico, apenas re-analisar
-    fs.writeFileSync(finalPath, fileBuffer);
-    fs.unlinkSync(tempPath); // Remover temporário
+  for (const file of req.files) {
+    const tempPath = file.path;
+    try {
+      const fileBuffer = fs.readFileSync(tempPath);
+      const md5 = crypto.createHash('md5').update(fileBuffer).digest('hex');
 
-    // 2. Extrair metadados e capa usando o utilitário
-    const metadata = parseEpub(finalPath, COVERS_DIR);
+      const finalFilename = `${md5}.epub`;
+      const finalPath = path.join(BOOKS_DIR, finalFilename);
 
-    // 3. Cadastrar livro no banco
-    const bookData = {
-      id: md5,
-      title: metadata.title,
-      author: metadata.author,
-      filename: req.file.originalname,
-      filepath: finalPath,
-      coverFilename: metadata.coverFilename,
-      addedAt: Date.now()
-    };
+      fs.writeFileSync(finalPath, fileBuffer);
+      fs.unlinkSync(tempPath);
 
-    db.addBook(bookData, req.user.username);
+      const metadata = parseEpub(finalPath, COVERS_DIR);
 
-    res.status(201).json({
-      success: true,
-      book: {
-        id: bookData.id,
-        title: bookData.title,
-        author: bookData.author,
-        hasCover: !!bookData.coverFilename
-      }
-    });
+      const bookData = {
+        id: md5,
+        title: metadata.title,
+        author: metadata.author,
+        filename: file.originalname,
+        filepath: finalPath,
+        coverFilename: metadata.coverFilename,
+        addedAt: Date.now()
+      };
 
-  } catch (err) {
-    console.error('Erro no upload do livro:', err);
-    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-    res.status(500).json({ error: 'Erro ao processar o arquivo EPUB' });
+      db.addBook(bookData, req.user.username);
+
+      results.push({
+        success: true,
+        filename: file.originalname,
+        book: {
+          id: bookData.id,
+          title: bookData.title,
+          author: bookData.author,
+          hasCover: !!bookData.coverFilename
+        }
+      });
+    } catch (err) {
+      console.error(`Erro no upload de "${file.originalname}":`, err);
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      results.push({ success: false, filename: file.originalname, error: 'Erro ao processar o arquivo EPUB' });
+    }
   }
+
+  const anySuccess = results.some(r => r.success);
+  res.status(anySuccess ? 201 : 500).json({ results });
 });
 
 // Download/Stream do arquivo do livro (suporta tanto a rota antiga do OPDS quanto a nova com extensão para o EpubJS)

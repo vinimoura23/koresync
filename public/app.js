@@ -663,41 +663,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleFiles(files) {
     if (files.length === 0) return;
-    const file = files[0];
-    
-    // Validar se é EPUB
-    if (!file.name.endsWith('.epub')) {
+
+    const epubFiles = Array.from(files).filter(f => f.name.endsWith('.epub'));
+
+    if (epubFiles.length === 0) {
       showToast('Apenas arquivos .epub são aceitos!', 'error');
       return;
     }
 
-    uploadFile(file);
+    if (files.length !== epubFiles.length) {
+      showToast(`${files.length - epubFiles.length} arquivo(s) ignorado(s) — apenas .epub é aceito.`, 'info');
+    }
+
+    uploadFiles(epubFiles);
   }
 
-  // Enviar Livro via AJAX com Progresso
-  function uploadFile(file) {
+  // Enviar Livros via AJAX com Progresso (múltiplos arquivos)
+  function uploadFiles(files) {
     const username = localStorage.getItem('koresync_user');
     const authKey = localStorage.getItem('koresync_auth_key');
 
     const formData = new FormData();
-    formData.append('book', file);
+    files.forEach(f => formData.append('book', f));
 
-    uploadFilename.textContent = file.name;
+    const label = files.length === 1 ? files[0].name : `${files.length} livros`;
+    uploadFilename.textContent = label;
     uploadPercent.textContent = '0%';
     uploadBarFill.style.width = '0%';
-    uploadStatusText.textContent = 'Enviando arquivo...';
+    uploadStatusText.textContent = files.length > 1 ? `Enviando ${files.length} arquivos...` : 'Enviando arquivo...';
     uploadProgress.classList.remove('hidden');
 
     const xhr = new XMLHttpRequest();
-    
-    // Monitorar progresso
+
+    // Monitorar progresso total de envio
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
         uploadPercent.textContent = `${percent}%`;
         uploadBarFill.style.width = `${percent}%`;
         if (percent === 100) {
-          uploadStatusText.textContent = 'Extraindo metadados e capas no servidor...';
+          uploadStatusText.textContent = 'Processando no servidor...';
         }
       }
     });
@@ -705,11 +710,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Conclusão
     xhr.addEventListener('load', () => {
       uploadProgress.classList.add('hidden');
-      if (xhr.status === 201) {
-        showToast('Livro enviado com sucesso!', 'success');
-        loadBooks();
+      fileInput.value = '';
+
+      if (xhr.status === 201 || xhr.status === 500) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          const ok = data.results.filter(r => r.success).length;
+          const fail = data.results.filter(r => !r.success).length;
+
+          if (ok > 0) {
+            const msg = ok === 1
+              ? `"${data.results.find(r => r.success).filename}" adicionado com sucesso!`
+              : `${ok} livro(s) adicionado(s) com sucesso!`;
+            showToast(msg, 'success');
+            loadBooks();
+          }
+          if (fail > 0) {
+            showToast(`${fail} arquivo(s) falharam ao ser processados.`, 'error');
+          }
+        } catch {
+          showToast('Erro inesperado na resposta do servidor.', 'error');
+        }
       } else {
-        showToast('Erro ao enviar o livro ao servidor.', 'error');
+        showToast('Erro ao enviar ao servidor.', 'error');
       }
     });
 

@@ -25,6 +25,9 @@
       <button id="back-btn" class="icon-btn" title="Voltar à Biblioteca">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
+      <button id="toc-btn" class="icon-btn" title="Sumário / Índice do Livro">
+        <span class="material-symbols-outlined">format_list_bulleted</span>
+      </button>
       <div class="book-info-container">
         <h1 id="book-title" class="reader-book-title">Carregando livro...</h1>
         <p id="book-author" class="reader-book-author">Aguarde</p>
@@ -100,6 +103,27 @@
       <span id="page-indicator">Carregando páginas...</span>
       <span id="percentage-indicator">0%</span>
     </div>
+  <!-- DRAWER DO SUMÁRIO (TOC) -->
+  <div id="toc-overlay" class="toc-overlay hidden" role="dialog" aria-modal="true" aria-label="Sumário do Livro">
+    <div class="toc-panel">
+      <div class="toc-header">
+        <h2 class="toc-title">
+          <span class="material-symbols-outlined">format_list_bulleted</span>
+          Sumário
+        </h2>
+        <button id="toc-close-btn" class="icon-btn" title="Fechar Sumário">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="toc-list" class="toc-list">
+        <div class="toc-loading">
+          <span class="material-symbols-outlined spinner">sync</span>
+          <span>Carregando capítulos...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- CONTAINER DE TOAST NOTIFICATIONS -->
   <div id="toast-container" class="toast-container"></div>
 

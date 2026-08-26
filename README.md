@@ -43,7 +43,7 @@ Tudo funciona de forma **100% offline**, rodando na sua rede Wi-Fi local sem dep
 ## 🚀 Instalação e Inicialização
 
 ### Pré-requisitos
-Certifique-se de ter o **Node.js** (versão 16 ou superior) instalado em sua máquina.
+Certifique-se de ter o **Node.js** (versão **18** ou superior) instalado em sua máquina.
 
 ### Passo 1: Instalar Dependências
 Navegue até a pasta do projeto e execute:

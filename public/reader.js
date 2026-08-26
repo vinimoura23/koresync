@@ -62,6 +62,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const layoutToggleBtn = document.getElementById('layout-toggle');
   const fullscreenToggleBtn = document.getElementById('fullscreen-toggle');
 
+  // Referências do TOC (Sumário)
+  const tocBtn = document.getElementById('toc-btn');
+  const tocOverlay = document.getElementById('toc-overlay');
+  const tocCloseBtn = document.getElementById('toc-close-btn');
+  const tocList = document.getElementById('toc-list');
+
   // Variáveis do Leitor
   let book = null;
   let rendition = null;
@@ -96,6 +102,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = 'index.html';
   });
 
+  // ==========================================
+  // SUMÁRIO (TOC) — Drawer Lateral
+  // ==========================================
+
+  function renderToc(items, container, depth = 0) {
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'toc-item';
+      btn.style.paddingLeft = `${20 + depth * 16}px`;
+      btn.textContent = item.label || 'Capítulo sem título';
+      btn.title = item.label || '';
+      btn.addEventListener('click', () => {
+        if (rendition && item.href) {
+          rendition.display(item.href);
+          closeToc();
+        }
+      });
+      container.appendChild(btn);
+
+      // Subcapítulos (recursivo)
+      if (item.subitems && item.subitems.length > 0) {
+        renderToc(item.subitems, container, depth + 1);
+      }
+    });
+  }
+
+  function openToc() {
+    tocOverlay.classList.remove('hidden');
+    tocCloseBtn.focus();
+  }
+
+  function closeToc() {
+    tocOverlay.classList.add('hidden');
+  }
+
+  tocBtn.addEventListener('click', openToc);
+  tocCloseBtn.addEventListener('click', closeToc);
+  tocOverlay.addEventListener('click', (e) => {
+    if (e.target === tocOverlay) closeToc();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !tocOverlay.classList.contains('hidden')) closeToc();
+  });
+
   // Configurações de Cabeçalho do Request
   const headers = {
     'Accept': 'application/vnd.koreader.v1+json',
@@ -126,6 +176,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       bookTitleEl.textContent = meta.title || 'Livro Sem Título';
       bookAuthorEl.textContent = meta.creator || 'Autor Desconhecido';
       document.title = `${meta.title} - Leitor KoreSync`;
+    });
+
+    // Carregar e renderizar o Sumário (TOC) quando a navegação estiver pronta
+    book.loaded.navigation.then(nav => {
+      tocList.innerHTML = '';
+      if (nav.toc && nav.toc.length > 0) {
+        renderToc(nav.toc, tocList);
+      } else {
+        tocList.innerHTML = '<p class="toc-empty">Este livro não possui sumário.</p>';
+      }
+    }).catch(() => {
+      tocList.innerHTML = '<p class="toc-empty">Não foi possível carregar o sumário.</p>';
     });
 
     // Configurar Rendition

@@ -136,11 +136,11 @@
       <aside class="sidebar-upload">
         <div id="drop-zone" class="upload-drop-zone">
           <span class="material-symbols-outlined upload-icon">cloud_upload</span>
-          <h3>Adicionar Novo Livro</h3>
-          <p>Arraste e solte o arquivo EPUB aqui</p>
-          <span class="file-limits">Apenas arquivos .epub</span>
-          <input type="file" id="file-input" accept=".epub" class="hidden-input">
-          <button id="browse-btn" class="btn btn-secondary">Procurar Arquivo</button>
+          <h3>Adicionar Novos Livros</h3>
+          <p>Arraste e solte um ou mais arquivos EPUB aqui</p>
+          <span class="file-limits">Apenas arquivos .epub — até 20 por vez</span>
+          <input type="file" id="file-input" accept=".epub" multiple class="hidden-input">
+          <button id="browse-btn" class="btn btn-secondary">Procurar Arquivos</button>
         </div>
 
         <div id="upload-progress" class="upload-progress-card hidden">
@@ -261,6 +261,9 @@
           <div id="connection-result" class="connection-result hidden"></div>
         </div>
       </div>
+
+    </div><!-- /.settings-panel -->
+  </div><!-- /#settings-modal -->
 
   <!-- MODAL DE CONFIRMAÇÃO (Substitui confirm() nativo) -->
   <div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
