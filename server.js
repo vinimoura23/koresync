@@ -43,6 +43,26 @@ function xmlEscape(str) {
             .replace(/'/g, '&apos;');
 }
 
+// Helper para resolver o caminho físico do arquivo EPUB de forma resiliente (compatível com Host e Docker)
+function getBookFilePath(book) {
+  if (!book) return null;
+  // 1. Arquivo direto em data/books/<id>.epub
+  const defaultPath = path.join(BOOKS_DIR, `${book.id}.epub`);
+  if (fs.existsSync(defaultPath)) return defaultPath;
+  
+  // 2. Se o book possui filepath gravado e ele existe no filesystem atual
+  if (book.filepath && fs.existsSync(book.filepath)) return book.filepath;
+  
+  // 3. Se foi gravado com caminho absoluto de outro host/container, pegar apenas o nome do arquivo
+  if (book.filepath) {
+    const candidateFilename = path.basename(book.filepath);
+    const candidatePath = path.join(BOOKS_DIR, candidateFilename);
+    if (fs.existsSync(candidatePath)) return candidatePath;
+  }
+  
+  return null;
+}
+
 // Middleware de Autenticação para KOReader e Web App
 function authMiddleware(req, res, next) {
   // KOReader envia no cabeçalho x-auth-user e x-auth-key
@@ -311,14 +331,15 @@ app.post('/api/books', authMiddleware, upload.array('book', 20), async (req, res
 // Download/Stream do arquivo do livro (suporta tanto a rota antiga do OPDS quanto a nova com extensão para o EpubJS)
 app.get(['/books/:id/file', '/books/:id/book.epub'], (req, res) => {
   const book = db.getBook(req.params.id);
-  if (!book || !fs.existsSync(book.filepath)) {
+  const bookFilePath = getBookFilePath(book);
+  if (!book || !bookFilePath) {
     return res.status(404).json({ error: 'Arquivo do livro não encontrado' });
   }
   
   // Definir o Content-Type correto para o EpubJS reconhecer o formato sem a extensão na URL
   res.setHeader('Content-Type', 'application/epub+zip');
   res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(book.filename)}"`);
-  res.sendFile(book.filepath);
+  res.sendFile(bookFilePath);
 });
 
 // Obter Capa do Livro
@@ -370,8 +391,9 @@ app.delete('/api/books/:id', authMiddleware, (req, res) => {
   const remainingBooks = db.getBooks();
   const fileStillUsed = remainingBooks.some(b => b.id === req.params.id);
   if (!fileStillUsed) {
-    if (fs.existsSync(deletedBook.filepath)) {
-      try { fs.unlinkSync(deletedBook.filepath); } catch (_) {}
+    const bookFilePath = getBookFilePath(deletedBook);
+    if (bookFilePath && fs.existsSync(bookFilePath)) {
+      try { fs.unlinkSync(bookFilePath); } catch (_) {}
     }
     if (deletedBook.coverFilename) {
       const coverPath = path.join(COVERS_DIR, deletedBook.coverFilename);
@@ -472,8 +494,9 @@ app.get('/api/backup', authMiddleware, (req, res) => {
     // Adicionar arquivos dos livros e capas
     const books = db.getBooks(); // todos, sem filtro de usuário
     for (const book of books) {
-      if (book.filepath && fs.existsSync(book.filepath)) {
-        zip.addLocalFile(book.filepath, 'books/');
+      const bookFilePath = getBookFilePath(book);
+      if (bookFilePath && fs.existsSync(bookFilePath)) {
+        zip.addLocalFile(bookFilePath, 'books/');
       }
       if (book.coverFilename) {
         const coverPath = path.join(COVERS_DIR, book.coverFilename);
