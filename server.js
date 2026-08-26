@@ -91,6 +91,36 @@ app.get('/users/auth', authMiddleware, (req, res) => {
   res.json({ username: req.user.username });
 });
 
+// Atualizar Perfil de Usuário (Nome de usuário e/ou Senha)
+app.put('/api/user/profile', authMiddleware, (req, res) => {
+  const { newUsername, newPassword } = req.body;
+  const currentUsername = req.user.username;
+
+  if (!newUsername && !newPassword) {
+    return res.status(400).json({ error: 'Nenhum dado para atualizar fornecido.' });
+  }
+
+  const result = db.updateUser(currentUsername, {
+    newUsername: newUsername ? newUsername.trim() : undefined,
+    newPassword: newPassword ? newPassword : undefined
+  });
+
+  if (result === 'conflict') {
+    return res.status(409).json({ error: 'Este nome de usuário já está em uso.' });
+  }
+
+  if (!result) {
+    return res.status(404).json({ error: 'Usuário não encontrado.' });
+  }
+
+  const updatedUsername = newUsername ? newUsername.trim().toLowerCase() : currentUsername;
+  res.json({
+    success: true,
+    username: updatedUsername,
+    message: 'Perfil atualizado com sucesso!'
+  });
+});
+
 // Obter Progresso (KOReader faz GET em /syncs/progress/:document)
 app.get('/syncs/progress/:document', authMiddleware, (req, res) => {
   const documentHash = req.params.document;
@@ -421,6 +451,7 @@ app.post('/api/restore', authMiddleware, uploadRestore.single('backup'), (req, r
     const tempDb = `${DB_FILE}.tmp`;
     fs.writeFileSync(tempDb, JSON.stringify(dbData, null, 2), 'utf8');
     fs.renameSync(tempDb, DB_FILE);
+    db.invalidateCache();
 
     // Restaurar arquivos de livros e capas
     let booksRestored = 0;

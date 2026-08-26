@@ -215,6 +215,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const settingsSyncUrl = document.getElementById('settings-sync-url');
   const settingsOpdsUrl = document.getElementById('settings-opds-url');
 
+  // Edição de Perfil
+  const profileEditForm = document.getElementById('profile-edit-form');
+  const profileUsernameInput = document.getElementById('profile-username-input');
+  const profileNewPasswordInput = document.getElementById('profile-new-password-input');
+  const profileConfirmPasswordInput = document.getElementById('profile-confirm-password-input');
+  const profileSaveBtn = document.getElementById('profile-save-btn');
+  const profileResult = document.getElementById('profile-result');
+
   // Sistema de Toast Notifications (substitui alert)
   function showToast(message, type = 'info', duration = 3500) {
     const container = document.getElementById('toast-container');
@@ -922,9 +930,112 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsSyncUrl.textContent = syncUrlEl.textContent || window.location.origin;
     settingsOpdsUrl.textContent = opdsUrlEl.textContent || `${window.location.origin}/opds`;
     connectionResult.classList.add('hidden');
+    if (profileResult) profileResult.classList.add('hidden');
+    if (profileUsernameInput) {
+      profileUsernameInput.value = localStorage.getItem('koresync_user') || '';
+    }
+    if (profileNewPasswordInput) profileNewPasswordInput.value = '';
+    if (profileConfirmPasswordInput) profileConfirmPasswordInput.value = '';
     loadAvatarIntoSettings();
     settingsModal.classList.remove('hidden');
   });
+
+  // ---- Edição de Perfil (Usuário e Senha) ----
+  function showProfileResult(msg, type) {
+    if (!profileResult) return;
+    profileResult.className = `connection-result ${type === 'ok' ? 'ok' : 'error'}`;
+    profileResult.textContent = msg;
+    profileResult.classList.remove('hidden');
+  }
+
+  if (profileEditForm) {
+    profileEditForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const currentUsername = localStorage.getItem('koresync_user');
+      const currentAuthKey = localStorage.getItem('koresync_auth_key');
+      const newUsername = profileUsernameInput.value.trim();
+      const newPassword = profileNewPasswordInput.value;
+      const confirmPassword = profileConfirmPasswordInput.value;
+
+      if (!newUsername) {
+        showProfileResult('O nome de usuário não pode ficar vazio.', 'error');
+        return;
+      }
+
+      if (newPassword) {
+        if (newPassword.length < 3) {
+          showProfileResult('A nova senha deve ter pelo menos 3 caracteres.', 'error');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          showProfileResult('As senhas digitadas não coincidem.', 'error');
+          return;
+        }
+      }
+
+      const isUsernameChanged = newUsername.toLowerCase() !== currentUsername.toLowerCase();
+      const isPasswordChanged = !!newPassword;
+
+      if (!isUsernameChanged && !isPasswordChanged) {
+        showProfileResult('Nenhuma alteração foi realizada.', 'ok');
+        return;
+      }
+
+      profileSaveBtn.disabled = true;
+      profileSaveBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Salvando...';
+      if (profileResult) profileResult.classList.add('hidden');
+
+      try {
+        const payload = {};
+        if (isUsernameChanged) payload.newUsername = newUsername;
+        if (isPasswordChanged) payload.newPassword = md5(newPassword);
+
+        const res = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-user': currentUsername,
+            'x-auth-key': currentAuthKey
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          if (isUsernameChanged) {
+            localStorage.setItem('koresync_user', data.username);
+            userNameDisplay.textContent = data.username;
+          }
+          if (isPasswordChanged) {
+            localStorage.setItem('koresync_auth_key', md5(newPassword));
+          }
+
+          loadAvatar(data.username || currentUsername);
+          loadAvatarIntoSettings();
+
+          profileNewPasswordInput.value = '';
+          profileConfirmPasswordInput.value = '';
+
+          showProfileResult('✅ Perfil atualizado com sucesso!', 'ok');
+          showToast('Perfil atualizado com sucesso!', 'success');
+
+          if (isUsernameChanged) {
+            loadBooks();
+          }
+        } else {
+          showProfileResult(`❌ ${data.error || 'Erro ao atualizar perfil.'}`, 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showProfileResult('❌ Erro de conexão ao atualizar perfil.', 'error');
+      } finally {
+        profileSaveBtn.disabled = false;
+        profileSaveBtn.innerHTML = '<span class="material-symbols-outlined">save</span> Salvar Alterações';
+      }
+    });
+  }
 
   settingsCloseBtn.addEventListener('click', () => {
     settingsModal.classList.add('hidden');

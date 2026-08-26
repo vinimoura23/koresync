@@ -14,23 +14,36 @@ if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify({
     users: [],
     books: [],
-    progress: {} // chave: 'username:bookId'
+    progress: {},
+    hash_mappings: {}
   }, null, 2));
 }
 
-// Leitura atômica
+// ==========================================
+// CACHE EM MEMÓRIA
+// ==========================================
+let _cache = null;
+
 function readDb() {
+  if (_cache) return _cache;
   try {
     const content = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(content);
+    _cache = JSON.parse(content);
+    if (!_cache.users) _cache.users = [];
+    if (!_cache.books) _cache.books = [];
+    if (!_cache.progress) _cache.progress = {};
+    if (!_cache.hash_mappings) _cache.hash_mappings = {};
+    return _cache;
   } catch (err) {
     console.error('Erro ao ler banco de dados JSON, reiniciando...', err);
-    return { users: [], books: [], progress: {} };
+    _cache = { users: [], books: [], progress: {}, hash_mappings: {} };
+    return _cache;
   }
 }
 
 // Escrita atômica para evitar corrupção
 function writeDb(data) {
+  _cache = data;
   const tempPath = `${DB_FILE}.tmp`;
   try {
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8');
@@ -44,10 +57,14 @@ function writeDb(data) {
   }
 }
 
+function invalidateCache() {
+  _cache = null;
+}
+
 // Operações de Usuários
 function getUser(username) {
   const db = readDb();
-  return db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+  return db.users.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
 }
 
 function createUser(username, md5Password) {
@@ -59,6 +76,53 @@ function createUser(username, md5Password) {
     username: username.toLowerCase(),
     password: md5Password
   });
+  writeDb(db);
+  return true;
+}
+
+function updateUser(username, { newUsername, newPassword }) {
+  const db = readDb();
+  const lower = username.toLowerCase();
+  const index = db.users.findIndex(u => u.username.toLowerCase() === lower);
+  if (index < 0) return false;
+
+  const newLower = newUsername ? newUsername.toLowerCase().trim() : lower;
+
+  // Se alterou o username, verificar se já existe outro usuário com esse nome
+  if (newLower !== lower && db.users.some(u => u.username.toLowerCase() === newLower)) {
+    return 'conflict';
+  }
+
+  if (newUsername) {
+    db.users[index].username = newLower;
+  }
+
+  if (newPassword) {
+    db.users[index].password = newPassword;
+  }
+
+  // Migrar dados se o username mudou
+  if (newUsername && newLower !== lower) {
+    // Migrar livros
+    db.books.forEach(b => {
+      if (b.owner && b.owner.toLowerCase() === lower) {
+        b.owner = newLower;
+      }
+    });
+
+    // Migrar progresso
+    const keysToMigrate = Object.keys(db.progress).filter(k => k.startsWith(`${lower}:`));
+    keysToMigrate.forEach(oldKey => {
+      const bookId = oldKey.slice(lower.length + 1);
+      const newKey = `${newLower}:${bookId}`;
+      db.progress[newKey] = {
+        ...db.progress[oldKey],
+        username: newLower
+      };
+      delete db.progress[oldKey];
+    });
+  }
+
   writeDb(db);
   return true;
 }
@@ -86,7 +150,7 @@ function getBooks(username) {
 
 function getBook(id) {
   const db = readDb();
-  return db.books.find(b => b.id === id);
+  return db.books.find(b => b.id === id) || null;
 }
 
 function deleteBook(id, username) {
@@ -211,11 +275,14 @@ function getAllProgress(username) {
 module.exports = {
   getUser,
   createUser,
+  updateUser,
   addBook,
   getBooks,
   getBook,
   deleteBook,
+  resolveBookId,
   getProgress,
   updateProgress,
-  getAllProgress
+  getAllProgress,
+  invalidateCache
 };

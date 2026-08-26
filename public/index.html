@@ -252,6 +252,33 @@
         </div>
       </div>
 
+      <!-- Seção: Conta e Acesso -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          <span class="material-symbols-outlined">manage_accounts</span>
+          Conta e Acesso
+        </h3>
+        <form id="profile-edit-form" class="settings-profile-form">
+          <div class="form-group">
+            <label for="profile-username-input">Nome de Usuário</label>
+            <input type="text" id="profile-username-input" class="form-input" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="profile-new-password-input">Nova Senha (opcional)</label>
+            <input type="password" id="profile-new-password-input" class="form-input" placeholder="Deixe em branco para manter a atual" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label for="profile-confirm-password-input">Confirmar Nova Senha</label>
+            <input type="password" id="profile-confirm-password-input" class="form-input" placeholder="Confirme a nova senha" autocomplete="new-password">
+          </div>
+          <button type="submit" id="profile-save-btn" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined">save</span>
+            Salvar Alterações
+          </button>
+          <div id="profile-result" class="connection-result hidden"></div>
+        </form>
+      </div>
+
       <!-- Seção: Conexão KOReader -->
       <div class="settings-section">
         <h3 class="settings-section-title">
