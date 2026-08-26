@@ -156,10 +156,33 @@
       </aside>
 
       <!-- Coluna da Direita: Catálogo de Livros -->
-      <main class="catalog-main">
+      <div class="catalog-main">
         <div class="catalog-header">
-          <h2>Seus Livros</h2>
-          <span id="book-count" class="book-count">0 livros</span>
+          <div class="catalog-header-left">
+            <h2>Seus Livros</h2>
+            <span id="book-count" class="book-count">0 livros</span>
+          </div>
+          <div class="sort-controls" role="group" aria-label="Ordenar livros">
+            <button class="sort-btn active" data-sort="date-desc" title="Mais recentes primeiro">
+              <span class="material-symbols-outlined">schedule</span>
+            </button>
+            <button class="sort-btn" data-sort="title-asc" title="Título A → Z">
+              <span class="material-symbols-outlined">sort_by_alpha</span>
+              <span class="sort-label">A→Z</span>
+            </button>
+            <button class="sort-btn" data-sort="title-desc" title="Título Z → A">
+              <span class="material-symbols-outlined">sort_by_alpha</span>
+              <span class="sort-label">Z→A</span>
+            </button>
+            <button class="sort-btn" data-sort="progress-desc" title="Mais lidos primeiro">
+              <span class="material-symbols-outlined">trending_down</span>
+              <span class="sort-label">% ↓</span>
+            </button>
+            <button class="sort-btn" data-sort="progress-asc" title="Menos lidos primeiro">
+              <span class="material-symbols-outlined">trending_up</span>
+              <span class="sort-label">% ↑</span>
+            </button>
+          </div>
         </div>
 
         <!-- Grid de Cartões de Livros -->
@@ -177,7 +200,7 @@
           <h3>Sua biblioteca está vazia</h3>
           <p>Adicione novos livros na área de upload ao lado para começar a ler e sincronizar!</p>
         </div>
-      </main>
+      </div><!-- /.catalog-main -->
       
     </div>
   </div>
@@ -259,6 +282,33 @@
             Testar Conexão
           </button>
           <div id="connection-result" class="connection-result hidden"></div>
+        </div>
+      </div>
+
+      <!-- Seção: Backup e Restauração -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          <span class="material-symbols-outlined">backup</span>
+          Backup e Restauração
+        </h3>
+        <div class="backup-area">
+          <p class="backup-hint">Exporte um arquivo <strong>.zip</strong> com todos os seus livros, capas e dados de progresso. Use para migrar para outro computador ou fazer cópias de segurança.</p>
+          <div class="backup-actions">
+            <button id="backup-download-btn" class="btn btn-secondary btn-sm">
+              <span class="material-symbols-outlined">download</span>
+              Exportar Backup
+            </button>
+            <label class="btn btn-ghost btn-sm" id="backup-restore-label" title="Importar backup .zip">
+              <span class="material-symbols-outlined">upload</span>
+              Importar Backup
+              <input type="file" id="backup-restore-input" accept=".zip" class="hidden-input">
+            </label>
+          </div>
+          <div id="backup-result" class="connection-result hidden"></div>
+          <p class="backup-warning">
+            <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;">warning</span>
+            Importar um backup <strong>substitui todos os dados atuais</strong>.
+          </p>
         </div>
       </div>
 

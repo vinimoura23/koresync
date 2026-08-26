@@ -182,7 +182,13 @@ function updateProgress(username, bookId, percentage, progressString, device, de
     progress: progressString,
     device: device || 'Web Reader',
     device_id: deviceId || 'web_browser',
-    timestamp: newTimestamp
+    timestamp: newTimestamp,
+    // startedAt: preserva o original se já existia, senão define agora
+    startedAt: (current && current.startedAt) ? current.startedAt : newTimestamp,
+    // completedAt: define quando >= 99%, preserva se já foi definido antes
+    completedAt: pct >= 0.99
+      ? (current && current.completedAt ? current.completedAt : newTimestamp)
+      : (current ? current.completedAt || null : null)
   };
 
   db.progress[key] = updated;

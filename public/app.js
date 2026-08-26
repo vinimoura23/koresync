@@ -300,6 +300,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const opdsUrlEl = document.getElementById('koreader-opds-url');
 
   let booksList = [];
+  let currentSort = 'date-desc'; // padrão: mais recentes primeiro
+
+  // ---- Funções de Ordenação ----
+  function sortBooks(books, sort) {
+    const sorted = [...books];
+    switch (sort) {
+      case 'title-asc':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+      case 'title-desc':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title, 'pt-BR'));
+      case 'progress-desc':
+        return sorted.sort((a, b) => {
+          const pA = a.progress ? a.progress.percentage : -1;
+          const pB = b.progress ? b.progress.percentage : -1;
+          return pB - pA;
+        });
+      case 'progress-asc':
+        return sorted.sort((a, b) => {
+          const pA = a.progress ? a.progress.percentage : 2;
+          const pB = b.progress ? b.progress.percentage : 2;
+          return pA - pB;
+        });
+      case 'date-asc':
+        return sorted.sort((a, b) => a.addedAt - b.addedAt);
+      case 'date-desc':
+      default:
+        return sorted.sort((a, b) => b.addedAt - a.addedAt);
+    }
+  }
+
+  // Eventos dos botões de ordenação
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSort = btn.getAttribute('data-sort');
+      const query = searchInput.value.toLowerCase().trim();
+      const filtered = query
+        ? booksList.filter(b => b.title.toLowerCase().includes(query) || b.author.toLowerCase().includes(query))
+        : booksList;
+      renderBooks(sortBooks(filtered, currentSort));
+    });
+  });
 
   // Lógica Global do Modo Escuro (Dark Mode)
   const isGlobalDarkMode = localStorage.getItem('koresync_global_dark_mode') === 'true';
@@ -498,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (res.ok) {
         booksList = await res.json();
-        renderBooks(booksList);
+        renderBooks(sortBooks(booksList, currentSort));
       } else {
         booksGrid.innerHTML = '<p class="error-msg">Erro ao carregar livros do servidor.</p>';
       }
@@ -506,6 +549,14 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(err);
       booksGrid.innerHTML = '<p class="error-msg">Servidor desconectado.</p>';
     }
+  }
+
+  // Helper para formatar data de timestamp (segundos ou ms)
+  function formatDate(ts) {
+    if (!ts) return null;
+    // timestamps de progresso estão em segundos, addedAt em ms
+    const date = new Date(ts > 1e10 ? ts : ts * 1000);
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   // 3. Renderizar Grid de Livros
@@ -557,6 +608,23 @@ document.addEventListener('DOMContentLoaded', () => {
              <span class="not-started-text">Não iniciado</span>
            </div>`;
 
+      // Estatísticas
+      const addedStr  = formatDate(book.addedAt);
+      const startStr  = book.progress?.startedAt   ? formatDate(book.progress.startedAt)   : null;
+      const lastStr   = book.progress?.timestamp    ? formatDate(book.progress.timestamp)    : null;
+      const doneStr   = book.progress?.completedAt  ? formatDate(book.progress.completedAt)  : null;
+
+      let statsLines = [];
+      if (addedStr)  statsLines.push(`<span title="Adicionado à biblioteca"><span class="material-symbols-outlined stat-icon">library_add</span>${addedStr}</span>`);
+      if (startStr)  statsLines.push(`<span title="Começou a ler"><span class="material-symbols-outlined stat-icon">play_circle</span>${startStr}</span>`);
+      if (doneStr)   statsLines.push(`<span title="Concluído" class="stat-done"><span class="material-symbols-outlined stat-icon">check_circle</span>${doneStr}</span>`);
+      else if (lastStr && startStr && lastStr !== startStr)
+                     statsLines.push(`<span title="Última leitura"><span class="material-symbols-outlined stat-icon">update</span>${lastStr}</span>`);
+
+      const statsHtml = statsLines.length
+        ? `<div class="book-stats">${statsLines.join('')}</div>`
+        : '';
+
       card.innerHTML = `
         <div class="book-cover-wrapper">
           ${coverHtml}
@@ -575,6 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <h3 class="book-title" title="${book.title}">${book.title}</h3>
           <p class="book-author" title="${book.author}">${book.author}</p>
           ${progressHtml}
+          ${statsHtml}
         </div>
       `;
 
@@ -626,14 +695,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 4. Busca em Tempo Real
+  // 4. Busca em Tempo Real (mantém ordenação atual)
   searchInput.addEventListener('input', () => {
     const query = searchInput.value.toLowerCase().trim();
     const filtered = booksList.filter(book => 
       book.title.toLowerCase().includes(query) || 
       book.author.toLowerCase().includes(query)
     );
-    renderBooks(filtered);
+    renderBooks(sortBooks(filtered, currentSort));
   });
 
   // 5. Upload de Arquivos (Drag & Drop + Input File)
@@ -745,6 +814,103 @@ document.addEventListener('DOMContentLoaded', () => {
     xhr.setRequestHeader('x-auth-user', username);
     xhr.setRequestHeader('x-auth-key', authKey);
     xhr.send(formData);
+  }
+
+  // ==========================================
+  // BACKUP E RESTAURAÇÃO
+  // ==========================================
+
+  const backupDownloadBtn  = document.getElementById('backup-download-btn');
+  const backupRestoreInput = document.getElementById('backup-restore-input');
+  const backupResult       = document.getElementById('backup-result');
+
+  function showBackupResult(msg, type) {
+    if (!backupResult) return;
+    backupResult.className = `connection-result ${type === 'ok' ? 'ok' : 'error'}`;
+    backupResult.textContent = msg;
+    backupResult.classList.remove('hidden');
+  }
+
+  if (backupDownloadBtn) {
+    backupDownloadBtn.addEventListener('click', async () => {
+      const username = localStorage.getItem('koresync_user');
+      const authKey  = localStorage.getItem('koresync_auth_key');
+
+      backupDownloadBtn.disabled = true;
+      backupDownloadBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Gerando...';
+      backupResult && backupResult.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/backup', {
+          headers: { 'x-auth-user': username, 'x-auth-key': authKey }
+        });
+
+        if (!res.ok) throw new Error('Erro no servidor');
+
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        const date = new Date().toISOString().split('T')[0];
+        a.href     = url;
+        a.download = `koresync_backup_${date}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showBackupResult('✅ Backup exportado com sucesso!', 'ok');
+      } catch (err) {
+        console.error(err);
+        showBackupResult('❌ Erro ao gerar o backup.', 'error');
+      } finally {
+        backupDownloadBtn.disabled = false;
+        backupDownloadBtn.innerHTML = '<span class="material-symbols-outlined">download</span> Exportar Backup';
+      }
+    });
+  }
+
+  if (backupRestoreInput) {
+    backupRestoreInput.addEventListener('change', async () => {
+      const file = backupRestoreInput.files[0];
+      if (!file) return;
+      backupRestoreInput.value = '';
+
+      showConfirmModal({
+        title: 'Restaurar Backup',
+        message: `Isso substituirá TODOS os dados atuais pelo conteúdo de "${file.name}". Tem certeza?`,
+        danger: true
+      }, async () => {
+        const username = localStorage.getItem('koresync_user');
+        const authKey  = localStorage.getItem('koresync_auth_key');
+
+        const label = document.getElementById('backup-restore-label');
+        if (label) { label.style.pointerEvents = 'none'; label.style.opacity = '0.6'; }
+        backupResult && backupResult.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('backup', file);
+
+        try {
+          const res  = await fetch('/api/restore', {
+            method: 'POST',
+            headers: { 'x-auth-user': username, 'x-auth-key': authKey },
+            body: formData
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            showToast('Backup restaurado! Recarregando...', 'success', 2000);
+            setTimeout(() => window.location.reload(), 2000);
+          } else {
+            showBackupResult(`❌ ${data.error || 'Erro ao restaurar'}`, 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showBackupResult('❌ Erro de conexão ao restaurar backup.', 'error');
+        } finally {
+          if (label) { label.style.pointerEvents = ''; label.style.opacity = ''; }
+        }
+      });
+    });
   }
 
   // ==========================================

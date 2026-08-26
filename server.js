@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const AdmZip = require('adm-zip');
 
 const db = require('./db');
 const { parseEpub } = require('./epub-util');
@@ -209,7 +210,9 @@ app.get('/api/books', authMiddleware, (req, res) => {
         percentage: prog.percentage,
         progress: prog.progress,
         device: prog.device,
-        timestamp: prog.timestamp
+        timestamp: prog.timestamp,
+        startedAt: prog.startedAt || null,
+        completedAt: prog.completedAt || null
       } : null
     };
   });
@@ -346,6 +349,107 @@ app.delete('/api/books/:id', authMiddleware, (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// ==========================================
+// 4. ENDPOINTS DE BACKUP E RESTAURAÇÃO
+// ==========================================
+
+// Multer separado para uploads de backup (zip grande)
+const uploadRestore = multer({
+  dest: path.join(__dirname, 'data', 'temp'),
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 } // 2 GB
+});
+
+// Exportar Backup Completo (db.json + livros + capas)
+app.get('/api/backup', authMiddleware, (req, res) => {
+  try {
+    const zip = new AdmZip();
+    const DB_FILE = path.join(__dirname, 'data', 'db.json');
+
+    // Adicionar o banco de dados
+    if (fs.existsSync(DB_FILE)) {
+      zip.addLocalFile(DB_FILE, '', 'db.json');
+    }
+
+    // Adicionar arquivos dos livros e capas
+    const books = db.getBooks(); // todos, sem filtro de usuário
+    for (const book of books) {
+      if (book.filepath && fs.existsSync(book.filepath)) {
+        zip.addLocalFile(book.filepath, 'books/');
+      }
+      if (book.coverFilename) {
+        const coverPath = path.join(COVERS_DIR, book.coverFilename);
+        if (fs.existsSync(coverPath)) {
+          zip.addLocalFile(coverPath, 'covers/');
+        }
+      }
+    }
+
+    const buffer = zip.toBuffer();
+    const date = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="koresync_backup_${date}.zip"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('Erro ao gerar backup:', err);
+    res.status(500).json({ error: 'Erro ao gerar o arquivo de backup' });
+  }
+});
+
+// Importar/Restaurar Backup
+app.post('/api/restore', authMiddleware, uploadRestore.single('backup'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Nenhum arquivo de backup enviado' });
+  }
+
+  const tempPath = req.file.path;
+
+  try {
+    const zip = new AdmZip(tempPath);
+
+    // Verificar se é um backup válido do KoreSync
+    const dbEntry = zip.getEntry('db.json');
+    if (!dbEntry) {
+      fs.unlinkSync(tempPath);
+      return res.status(400).json({ error: 'Arquivo inválido: não é um backup KoreSync (db.json não encontrado)' });
+    }
+
+    // Restaurar banco de dados
+    const DB_FILE = path.join(__dirname, 'data', 'db.json');
+    const dbData = JSON.parse(dbEntry.getData().toString('utf8'));
+    const tempDb = `${DB_FILE}.tmp`;
+    fs.writeFileSync(tempDb, JSON.stringify(dbData, null, 2), 'utf8');
+    fs.renameSync(tempDb, DB_FILE);
+
+    // Restaurar arquivos de livros e capas
+    let booksRestored = 0;
+    let coversRestored = 0;
+
+    for (const entry of zip.getEntries()) {
+      if (entry.isDirectory) continue;
+      const name = path.basename(entry.entryName);
+
+      if (entry.entryName.startsWith('books/')) {
+        fs.writeFileSync(path.join(BOOKS_DIR, name), entry.getData());
+        booksRestored++;
+      } else if (entry.entryName.startsWith('covers/')) {
+        fs.writeFileSync(path.join(COVERS_DIR, name), entry.getData());
+        coversRestored++;
+      }
+    }
+
+    fs.unlinkSync(tempPath);
+
+    res.json({
+      success: true,
+      message: `Backup restaurado com sucesso! ${booksRestored} livro(s) e ${coversRestored} capa(s) recuperados.`
+    });
+  } catch (err) {
+    console.error('Erro ao restaurar backup:', err);
+    if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+    res.status(500).json({ error: 'Erro ao processar o arquivo de backup' });
+  }
 });
 
 // Handler para rotas inexistentes (404)

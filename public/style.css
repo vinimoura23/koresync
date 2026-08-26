@@ -612,11 +612,19 @@ body {
 
 .catalog-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--google-gray-border);
   padding-bottom: 12px;
+}
+
+.catalog-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
 
 .catalog-header h2 {
@@ -627,6 +635,140 @@ body {
 .book-count {
   font-size: 14px;
   color: var(--text-gray);
+}
+
+/* Botões de Ordenação */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #f1f3f4;
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-gray);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.sort-btn .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.sort-btn:hover {
+  background-color: rgba(60,64,67,0.1);
+  color: var(--text-dark);
+}
+
+.sort-btn.active {
+  background-color: var(--white);
+  color: var(--google-blue);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+body.dark-mode .sort-controls {
+  background-color: rgba(255,255,255,0.07);
+}
+
+body.dark-mode .sort-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+  color: #e8eaed;
+}
+
+body.dark-mode .sort-btn.active {
+  background-color: rgba(138, 180, 248, 0.15);
+  color: #8ab4f8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Estatísticas do Card de Livro */
+.book-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--google-gray-border);
+}
+
+.book-stats span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--text-gray);
+  line-height: 1.4;
+}
+
+.stat-icon {
+  font-size: 13px !important;
+  flex-shrink: 0;
+  color: var(--text-gray);
+}
+
+.stat-done {
+  color: #137333 !important;
+}
+
+.stat-done .stat-icon {
+  color: #137333 !important;
+}
+
+body.dark-mode .book-stats {
+  border-color: #2c2c2c;
+}
+
+body.dark-mode .stat-done {
+  color: #81c995 !important;
+}
+
+body.dark-mode .stat-done .stat-icon {
+  color: #81c995 !important;
+}
+
+/* Seção Backup nas Configurações */
+.backup-area {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.backup-hint {
+  font-size: 13px;
+  color: var(--text-gray);
+  line-height: 1.55;
+}
+
+.backup-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.backup-warning {
+  font-size: 11.5px;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+body.dark-mode .backup-warning {
+  color: #fbbf24;
 }
 
 /* Grid dos Livros */
