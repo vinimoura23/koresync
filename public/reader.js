@@ -98,10 +98,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Botão Voltar
+  // Botão Voltar (sai de tela cheia se ativa e volta à biblioteca)
   backBtn.addEventListener('click', () => {
-    window.location.href = 'index.html';
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {}).finally(() => {
+        window.location.href = 'index.html';
+      });
+    } else {
+      window.location.href = 'index.html';
+    }
   });
+
+  // Ativação Automática de Tela Cheia ao Abrir o Livro
+  function requestAutoFullscreen() {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
+  // Tenta tela cheia no carregamento e na primeira interação do usuário na página
+  requestAutoFullscreen();
+  const enableFullscreenOnFirstGesture = () => {
+    requestAutoFullscreen();
+    window.removeEventListener('click', enableFullscreenOnFirstGesture);
+    window.removeEventListener('keydown', enableFullscreenOnFirstGesture);
+    window.removeEventListener('touchstart', enableFullscreenOnFirstGesture);
+  };
+  window.addEventListener('click', enableFullscreenOnFirstGesture, { capture: true });
+  window.addEventListener('keydown', enableFullscreenOnFirstGesture, { capture: true });
+  window.addEventListener('touchstart', enableFullscreenOnFirstGesture, { capture: true });
 
   // ==========================================
   // SUMÁRIO (TOC) — Drawer Lateral
@@ -263,11 +288,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Capturar teclas mesmo com foco dentro do iframe do livro
       if (contents.document) {
-        contents.document.addEventListener('keyup', (e) => {
-          if (!rendition) return;
-          if (e.key === 'ArrowLeft') rendition.prev();
-          if (e.key === 'ArrowRight') rendition.next();
-          if (e.key === 'Escape') handleEscapeKey();
+        contents.document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            handleEscapeKey();
+          } else if (e.key === 'ArrowLeft') {
+            if (rendition) rendition.prev();
+          } else if (e.key === 'ArrowRight') {
+            if (rendition) rendition.next();
+          }
         });
       }
 
@@ -579,22 +608,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       closeToc();
       return;
     }
-    if (document.fullscreenElement) {
-      if (document.exitFullscreen) document.exitFullscreen();
-      return;
+    // Sair do livro e voltar para a biblioteca (fechando tela cheia caso ativa)
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {}).finally(() => {
+        window.location.href = 'index.html';
+      });
+    } else {
+      window.location.href = 'index.html';
     }
-    window.location.href = 'index.html';
   }
 
-  // Navegação por Teclado (Setas Direita/Esquerda e ESC para sair/fullscreen)
-  document.addEventListener('keyup', e => {
-    if (!rendition) return;
-    if (e.key === 'ArrowLeft') {
-      rendition.prev();
-    } else if (e.key === 'ArrowRight') {
-      rendition.next();
-    } else if (e.key === 'Escape') {
+  // Navegação por Teclado (Setas Direita/Esquerda e ESC para sair)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
       handleEscapeKey();
+    } else if (e.key === 'ArrowLeft') {
+      if (rendition) rendition.prev();
+    } else if (e.key === 'ArrowRight') {
+      if (rendition) rendition.next();
     }
   });
 
