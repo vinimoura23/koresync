@@ -47,61 +47,107 @@ function parseEpub(epubFilePath, coversOutputDir) {
       author = decodeXmlEntities(authorMatch[1].trim());
     }
 
-    // 3. Tentar extrair a capa do EPUB
+    // 3. Tentar extrair a capa do EPUB (com validação estrita de imagens)
     let coverFilename = null;
-    let coverSavedPath = null;
-    
+    const validImageExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+
     try {
-      let coverHref = null;
+      let coverEntry = null;
 
-      // Método A: Procurar <meta name="cover" content="id-da-capa" />
-      const coverMetaMatch = opfXml.match(/<meta[^>]+name=["']cover["'][^>]+content=["']([^"']+)["']/i) || 
-                             opfXml.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']cover["']/i);
-      
-      if (coverMetaMatch) {
-        const coverId = coverMetaMatch[1];
-        // Buscar o item no manifest com esse ID
-        const itemRegex = new RegExp(`<item[^>]+id=["']${escapeRegExp(coverId)}["'][^>]+href=["']([^"']+)["']`, 'i');
-        const itemMatch = opfXml.match(itemRegex);
-        if (itemMatch) {
-          coverHref = itemMatch[1];
+      // Helper para buscar entrada no ZIP por caminho relativo ao OPF ou absoluto no ZIP
+      const findZipEntry = (href) => {
+        if (!href) return null;
+        const decoded = decodeURIComponent(href.trim());
+        const fullPath = opfDir === '.' ? decoded : path.posix.join(opfDir, decoded);
+        return zip.getEntry(fullPath) || zip.getEntry(decoded);
+      };
+
+      // Helper para extrair imagem de uma página XHTML de capa
+      const extractImageFromHtml = (htmlContent, htmlEntryPath) => {
+        if (!htmlContent) return null;
+        const htmlDir = path.dirname(htmlEntryPath);
+        // Procurar <img src="..."> ou <image xlink:href="..."> / <image href="...">
+        const imgMatch = htmlContent.match(/<img[^>]+src=["']([^"']+)["']/i) ||
+                         htmlContent.match(/<image[^>]+xlink:href=["']([^"']+)["']/i) ||
+                         htmlContent.match(/<image[^>]+href=["']([^"']+)["']/i);
+        if (imgMatch) {
+          const imgHref = decodeURIComponent(imgMatch[1].trim());
+          const fullImgPath = htmlDir === '.' ? imgHref : path.posix.join(htmlDir, imgHref);
+          return zip.getEntry(fullImgPath) || zip.getEntry(imgHref);
+        }
+        return null;
+      };
+
+      // Método 1: <item properties="cover-image" ... />
+      const propMatch = opfXml.match(/<item[^>]+properties=["'][^"']*cover-image[^"']*["'][^>]+href=["']([^"']+)["']/i) ||
+                        opfXml.match(/<item[^>]+href=["']([^"']+)["'][^>]+properties=["'][^"']*cover-image[^"']*["']/i);
+      if (propMatch) {
+        coverEntry = findZipEntry(propMatch[1]);
+      }
+
+      // Método 2: <meta name="cover" content="id-da-capa" />
+      if (!coverEntry) {
+        const metaMatch = opfXml.match(/<meta[^>]+name=["']cover["'][^>]+content=["']([^"']+)["']/i) ||
+                          opfXml.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']cover["']/i);
+        if (metaMatch) {
+          const coverId = metaMatch[1];
+          const itemRegex = new RegExp(`<item[^>]+id=["']${escapeRegExp(coverId)}["'][^>]+href=["']([^"']+)["'][^>]*>`, 'i');
+          const itemMatch = opfXml.match(itemRegex);
+          if (itemMatch) {
+            const candidateEntry = findZipEntry(itemMatch[1]);
+            if (candidateEntry) {
+              const ext = path.extname(candidateEntry.entryName).toLowerCase();
+              if (validImageExts.includes(ext)) {
+                coverEntry = candidateEntry;
+              } else if (['.html', '.xhtml', '.xml', '.htm'].includes(ext)) {
+                // É um documento HTML que encapsula a capa -> extrair a imagem interna
+                coverEntry = extractImageFromHtml(candidateEntry.getData().toString('utf8'), candidateEntry.entryName);
+              }
+            }
+          }
         }
       }
 
-      // Método B: Se não achou, procurar no manifest itens com properties="cover-image"
-      if (!coverHref) {
-        const propertyCoverMatch = opfXml.match(/<item[^>]+properties=["']cover-image["'][^>]+href=["']([^"']+)["']/i) ||
-                                   opfXml.match(/<item[^>]+href=["']([^"']+)["'][^>]+properties=["']cover-image["']/i);
-        if (propertyCoverMatch) {
-          coverHref = propertyCoverMatch[1];
+      // Método 3: Itens no manifesto com media-type="image/*" contendo "cover" no id ou href
+      if (!coverEntry) {
+        const allItems = opfXml.match(/<item\b[^>]+>/gi) || [];
+        for (const itemTag of allItems) {
+          const hrefMatch = itemTag.match(/href=["']([^"']+)["']/i);
+          const typeMatch = itemTag.match(/media-type=["']([^"']+)["']/i);
+          const idMatch = itemTag.match(/id=["']([^"']+)["']/i);
+
+          if (hrefMatch && typeMatch && typeMatch[1].toLowerCase().startsWith('image/')) {
+            const href = hrefMatch[1];
+            const id = idMatch ? idMatch[1] : '';
+            if (/cover/i.test(href) || /cover/i.test(id)) {
+              coverEntry = findZipEntry(href);
+              if (coverEntry) break;
+            }
+          }
         }
       }
 
-      // Método C: Fallback para itens com id ou href que contenham "cover"
-      if (!coverHref) {
-        const fallbackCoverMatch = opfXml.match(/<item[^>]+id=["'][^"']*cover[^"']*["'][^>]+href=["']([^"']+)["']/i) ||
-                                   opfXml.match(/<item[^>]+href=["']([^"']+)["'][^>]+id=["'][^"']*cover[^"']*["']/i);
-        if (fallbackCoverMatch) {
-          coverHref = fallbackCoverMatch[1];
+      // Método 4: Varredura direta no arquivo ZIP por imagens nomeadas como cover.*
+      if (!coverEntry) {
+        const zipEntries = zip.getEntries();
+        const coverCandidates = zipEntries.filter(e => {
+          const name = path.basename(e.entryName).toLowerCase();
+          return /(^|\b)(cover|capa|portada|frontcover|titlepage)\.(jpe?g|png|webp)$/i.test(name);
+        });
+        if (coverCandidates.length > 0) {
+          // Ordenar pelo menor caminho ou maior tamanho (capas reais costumam ter mais de 20KB)
+          coverCandidates.sort((a, b) => b.header.size - a.header.size);
+          coverEntry = coverCandidates[0];
         }
       }
 
-      // Se encontrou uma capa, extrair do ZIP
-      if (coverHref) {
-        // Descodificar URL-encode no href da capa (ex: %20 -> espaço)
-        coverHref = decodeURIComponent(coverHref);
-        
-        // Resolver o caminho da capa em relação ao diretório do OPF
-        const fullCoverPath = opfDir === '.' ? coverHref : path.posix.join(opfDir, coverHref);
-        
-        const coverEntry = zip.getEntry(fullCoverPath);
-        if (coverEntry) {
-          const fileExt = path.extname(coverHref) || '.jpg';
-          // Gerar nome único baseado no arquivo EPUB
+      // Se encontrou uma entrada de imagem válida no ZIP
+      if (coverEntry && coverEntry.header.size > 100) {
+        const ext = path.extname(coverEntry.entryName).toLowerCase() || '.jpg';
+        if (validImageExts.includes(ext)) {
           const baseName = path.basename(epubFilePath, path.extname(epubFilePath));
-          coverFilename = `${baseName}_cover${fileExt}`;
-          coverSavedPath = path.join(coversOutputDir, coverFilename);
-          
+          coverFilename = `${baseName}_cover${ext}`;
+          const coverSavedPath = path.join(coversOutputDir, coverFilename);
           fs.writeFileSync(coverSavedPath, coverEntry.getData());
         }
       }

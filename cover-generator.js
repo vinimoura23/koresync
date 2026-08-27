@@ -1,104 +1,105 @@
 /**
  * Gerador de Capas Elegantes (Smart Covers) para o KoreSync
  * Gera capas editoriais em SVG de alta definição de forma procedural e determinística.
+ * Otimizado para alta legibilidade em qualquer tela (inclusive ThinkPad e notebooks).
  */
 
-// Paletas editoriais refinadas com tons clássicos, modernos e escuros
+// Paletas editoriais refinadas com tons clássicos, modernos e profundos
 const PALETTES = [
   {
     name: 'Midnight Sapphire',
-    bg1: '#0f172a',
+    bg1: '#0a0f1d',
     bg2: '#1e3a8a',
     accent: '#60a5fa',
     gold: '#fbbf24',
-    text: '#f8fafc',
-    subtext: '#94a3b8'
+    text: '#ffffff',
+    subtext: '#bfdbfe'
   },
   {
     name: 'Emerald Forest',
-    bg1: '#064e3b',
-    bg2: '#047857',
+    bg1: '#022c22',
+    bg2: '#065f46',
     accent: '#34d399',
     gold: '#fef08a',
-    text: '#f0fdf4',
+    text: '#ffffff',
     subtext: '#a7f3d0'
   },
   {
     name: 'Warm Terracotta',
-    bg1: '#7c2d12',
-    bg2: '#c2410c',
+    bg1: '#431407',
+    bg2: '#9a3412',
     accent: '#fdba74',
     gold: '#fef3c7',
-    text: '#fff7ed',
+    text: '#ffffff',
     subtext: '#fed7aa'
   },
   {
     name: 'Plum Velvet',
-    bg1: '#4a044e',
-    bg2: '#701a75',
+    bg1: '#2e0233',
+    bg2: '#581c87',
     accent: '#e879f9',
     gold: '#fde047',
-    text: '#fdf4ff',
+    text: '#ffffff',
     subtext: '#f5d0fe'
   },
   {
     name: 'Crimson Bordeaux',
-    bg1: '#450a0a',
+    bg1: '#310404',
     bg2: '#881337',
-    accent: '#f43f5e',
+    accent: '#fb7185',
     gold: '#fef08a',
-    text: '#fff1f2',
+    text: '#ffffff',
     subtext: '#fecdd3'
   },
   {
     name: 'Nordic Slate',
-    bg1: '#18181b',
+    bg1: '#09090b',
     bg2: '#27272a',
-    accent: '#a1a1aa',
-    gold: '#e4e4e7',
-    text: '#fafafa',
-    subtext: '#a1a1aa'
+    accent: '#cbd5e1',
+    gold: '#e2e8f0',
+    text: '#ffffff',
+    subtext: '#cbd5e1'
   },
   {
     name: 'Royal Indigo',
-    bg1: '#1e1b4b',
-    bg2: '#3730a3',
+    bg1: '#0f0e26',
+    bg2: '#312e81',
     accent: '#818cf8',
     gold: '#fde047',
-    text: '#eef2ff',
+    text: '#ffffff',
     subtext: '#c7d2fe'
   },
   {
     name: 'Amber Copper',
-    bg1: '#451a03',
+    bg1: '#260e02',
     bg2: '#78350f',
-    accent: '#f59e0b',
-    gold: '#fde68a',
-    text: '#fffbeb',
-    subtext: '#fcd34d'
+    accent: '#fbbf24',
+    gold: '#fef08a',
+    text: '#ffffff',
+    subtext: '#fde68a'
   },
   {
     name: 'Deep Teal',
-    bg1: '#134e4a',
-    bg2: '#0f766e',
+    bg1: '#042f2e',
+    bg2: '#115e59',
     accent: '#2dd4bf',
     gold: '#fef08a',
-    text: '#f0fdfa',
+    text: '#ffffff',
     subtext: '#99f6e4'
   },
   {
     name: 'Obsidian Gold',
     bg1: '#09090b',
-    bg2: '#18181b',
+    bg2: '#1c1917',
     accent: '#d97706',
     gold: '#fbbf24',
-    text: '#fafaf9',
-    subtext: '#d6d3d1'
+    text: '#ffffff',
+    subtext: '#e7e5e4'
   }
 ];
 
 // Padrões de Arte/Ornamento geométrico minimalista
-const ORNAMENTS = ['circle', 'diamond', 'book', 'feather', 'sun'];
+const ORNAMENTS = ['book', 'diamond', 'sun', 'circle', 'crest'];
 
 function hashString(str) {
   let hash = 0;
@@ -118,10 +119,19 @@ function escapeXml(str) {
             .replace(/'/g, '&apos;');
 }
 
-// Quebra inteligente de texto em linhas com limite
-function wrapText(text, maxCharsPerLine = 16, maxLines = 4) {
+// Quebra inteligente de texto em linhas curtas com foco em palavras grandes e destaque
+function wrapText(text, maxCharsPerLine = 13, maxLines = 4) {
   if (!text) return ['Sem Título'];
-  const words = text.trim().split(/\s+/);
+  
+  // Limpar prefixos e sufixos desnecessários (como [Coleção X], (Z-Library), etc.)
+  let cleanText = text
+    .replace(/\s*\([^)]*z-library[^)]*\)/gi, '')
+    .replace(/\s*\[[^\]]*z-library[^\]]*\]/gi, '')
+    .trim();
+
+  if (!cleanText) cleanText = text.trim();
+
+  const words = cleanText.split(/\s+/);
   const lines = [];
   let currentLine = '';
 
@@ -156,45 +166,67 @@ function generateCoverSvg(title, author, seedId = '') {
   const palette = PALETTES[hash % PALETTES.length];
   const ornament = ORNAMENTS[hash % ORNAMENTS.length];
 
-  // Cálculo dinâmico do tamanho de fonte do título
-  const titleLines = wrapText(safeTitle, 15, 4);
-  let titleFontSize = 26;
-  if (titleLines.length === 1 && safeTitle.length < 12) titleFontSize = 32;
-  else if (titleLines.length >= 3) titleFontSize = 22;
-  else if (titleLines.length >= 4) titleFontSize = 19;
+  // Quebra de texto com limite menor para permitir fontes muito maiores
+  const titleLines = wrapText(safeTitle, 13, 4);
+  
+  // Tipografia significativamente aumentada para ótima leitura em notebooks/ThinkPads
+  let titleFontSize = 38;
+  if (titleLines.length === 1) {
+    titleFontSize = safeTitle.length <= 10 ? 44 : 38;
+  } else if (titleLines.length === 2) {
+    titleFontSize = 36;
+  } else if (titleLines.length === 3) {
+    titleFontSize = 30;
+  } else {
+    titleFontSize = 26;
+  }
 
-  const lineHeight = titleFontSize * 1.25;
-  const startY = 320 - ((titleLines.length - 1) * lineHeight) / 2;
+  const lineHeight = Math.round(titleFontSize * 1.22);
+  const totalTextHeight = (titleLines.length - 1) * lineHeight;
+  const startY = Math.round(300 - totalTextHeight / 2);
 
   // Renderizar ornamentos
   let ornamentSvg = '';
   if (ornament === 'book') {
     ornamentSvg = `
-      <g transform="translate(200, 150) scale(1.4)" stroke="${palette.gold}" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M-16 -8 C-8 -12 0 -8 0 8 C0 -8 8 -12 16 -8 L16 14 C8 10 0 14 0 6 C0 14 -8 10 -16 14 Z" opacity="0.9"/>
-        <line x1="0" y1="-8" x2="0" y2="6" opacity="0.9"/>
+      <g transform="translate(200, 135) scale(1.6)" stroke="${palette.gold}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-16 -8 C-8 -12 0 -8 0 8 C0 -8 8 -12 16 -8 L16 14 C8 10 0 14 0 6 C0 14 -8 10 -16 14 Z" opacity="0.95"/>
+        <line x1="0" y1="-8" x2="0" y2="6" opacity="0.95"/>
       </g>
     `;
   } else if (ornament === 'diamond') {
     ornamentSvg = `
-      <g transform="translate(200, 150)">
-        <polygon points="0,-16 16,0 0,16 -16,0" fill="none" stroke="${palette.gold}" stroke-width="1.5" opacity="0.85"/>
-        <circle cx="0" cy="0" r="4" fill="${palette.gold}" opacity="0.9"/>
+      <g transform="translate(200, 135)">
+        <polygon points="0,-18 18,0 0,18 -18,0" fill="none" stroke="${palette.gold}" stroke-width="2" opacity="0.9"/>
+        <polygon points="0,-10 10,0 0,10 -10,0" fill="${palette.gold}" opacity="0.3"/>
+        <circle cx="0" cy="0" r="3.5" fill="${palette.gold}"/>
       </g>
     `;
   } else if (ornament === 'sun') {
     ornamentSvg = `
-      <g transform="translate(200, 150)">
-        <circle cx="0" cy="0" r="12" fill="none" stroke="${palette.gold}" stroke-width="1.5" opacity="0.85"/>
-        <circle cx="0" cy="0" r="5" fill="${palette.gold}" opacity="0.9"/>
+      <g transform="translate(200, 135)">
+        <circle cx="0" cy="0" r="16" fill="none" stroke="${palette.gold}" stroke-width="1.8" opacity="0.9"/>
+        <circle cx="0" cy="0" r="6" fill="${palette.gold}" opacity="0.95"/>
+        <line x1="0" y1="-22" x2="0" y2="-18" stroke="${palette.gold}" stroke-width="2"/>
+        <line x1="0" y1="18" x2="0" y2="22" stroke="${palette.gold}" stroke-width="2"/>
+        <line x1="-22" y1="0" x2="-18" y2="0" stroke="${palette.gold}" stroke-width="2"/>
+        <line x1="18" y1="0" x2="22" y2="0" stroke="${palette.gold}" stroke-width="2"/>
+      </g>
+    `;
+  } else if (ornament === 'crest') {
+    ornamentSvg = `
+      <g transform="translate(200, 135)" stroke="${palette.gold}" fill="none" stroke-width="2">
+        <path d="M-15,-10 L0,-20 L15,-10 L15,10 L0,20 L-15,10 Z" opacity="0.9"/>
+        <circle cx="0" cy="0" r="5" fill="${palette.gold}"/>
       </g>
     `;
   } else {
-    // Circle clássico
+    // Circle clássico com anéis
     ornamentSvg = `
-      <g transform="translate(200, 150)">
-        <circle cx="0" cy="0" r="14" fill="none" stroke="${palette.gold}" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.8"/>
-        <circle cx="0" cy="0" r="6" fill="${palette.gold}" opacity="0.85"/>
+      <g transform="translate(200, 135)">
+        <circle cx="0" cy="0" r="18" fill="none" stroke="${palette.gold}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.85"/>
+        <circle cx="0" cy="0" r="11" fill="none" stroke="${palette.gold}" stroke-width="1.5" opacity="0.9"/>
+        <circle cx="0" cy="0" r="4.5" fill="${palette.gold}"/>
       </g>
     `;
   }
@@ -220,9 +252,9 @@ function generateCoverSvg(title, author, seedId = '') {
       <stop offset="100%" stop-color="${palette.accent}"/>
     </linearGradient>
 
-    <!-- Sombra Suave -->
-    <filter id="shadow-${hash}" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.35"/>
+    <!-- Sombra Forte para Alto Contraste do Título -->
+    <filter id="shadow-${hash}" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.75"/>
     </filter>
   </defs>
 
@@ -230,44 +262,44 @@ function generateCoverSvg(title, author, seedId = '') {
   <rect width="400" height="600" fill="url(#bg-grad-${hash})"/>
 
   <!-- Textura da Lombada (Efeito Livro Físico) -->
-  <rect x="0" y="0" width="16" height="600" fill="rgba(0,0,0,0.25)"/>
-  <line x1="16" y1="0" x2="16" y2="600" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <rect x="0" y="0" width="18" height="600" fill="rgba(0,0,0,0.3)"/>
+  <line x1="18" y1="0" x2="18" y2="600" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
 
-  <!-- Moldura Decorativa Externa -->
-  <rect x="28" y="28" width="344" height="544" rx="4" fill="none" stroke="${palette.gold}" stroke-width="1.2" opacity="0.45"/>
-  <rect x="34" y="34" width="332" height="532" rx="2" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.8"/>
+  <!-- Moldura Decorativa Externa com Cantos Chanfrados -->
+  <rect x="26" y="26" width="348" height="548" rx="4" fill="none" stroke="${palette.gold}" stroke-width="1.8" opacity="0.6"/>
+  <rect x="32" y="32" width="336" height="536" rx="2" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
 
-  <!-- Cantos Decorativos -->
-  <circle cx="28" cy="28" r="3" fill="${palette.gold}" opacity="0.6"/>
-  <circle cx="372" cy="28" r="3" fill="${palette.gold}" opacity="0.6"/>
-  <circle cx="28" cy="572" r="3" fill="${palette.gold}" opacity="0.6"/>
-  <circle cx="372" cy="572" r="3" fill="${palette.gold}" opacity="0.6"/>
+  <!-- Cantos Decorativos Dourados -->
+  <circle cx="26" cy="26" r="3.5" fill="${palette.gold}" opacity="0.8"/>
+  <circle cx="374" cy="26" r="3.5" fill="${palette.gold}" opacity="0.8"/>
+  <circle cx="26" cy="574" r="3.5" fill="${palette.gold}" opacity="0.8"/>
+  <circle cx="374" cy="574" r="3.5" fill="${palette.gold}" opacity="0.8"/>
 
   <!-- Selo Superior (KoreSync Classics) -->
-  <text x="200" y="76" font-family="'Inter', -apple-system, sans-serif" font-size="9" font-weight="700" fill="${palette.gold}" text-anchor="middle" letter-spacing="3" opacity="0.85">
+  <text x="200" y="70" font-family="'Inter', -apple-system, sans-serif" font-size="10" font-weight="800" fill="${palette.gold}" text-anchor="middle" letter-spacing="3.5" opacity="0.9">
     KORESYNC EDITION
   </text>
-  <line x1="150" y1="90" x2="250" y2="90" stroke="${palette.gold}" stroke-width="0.8" opacity="0.4"/>
+  <line x1="140" y1="84" x2="260" y2="84" stroke="${palette.gold}" stroke-width="1" opacity="0.5"/>
 
   <!-- Ornamento Central Superior -->
   ${ornamentSvg}
 
-  <!-- Título do Livro -->
+  <!-- Título do Livro em Destaque Alto -->
   <g filter="url(#shadow-${hash})">
-    <text font-family="'Georgia', 'Merriweather', serif" font-size="${titleFontSize}" font-weight="700" fill="${palette.text}" text-anchor="middle" letter-spacing="0.5">
+    <text font-family="'Georgia', 'Merriweather', -apple-system, serif" font-size="${titleFontSize}" font-weight="800" fill="${palette.text}" text-anchor="middle" letter-spacing="0.5">
       ${titleTspans}
     </text>
   </g>
 
   <!-- Divisor Floral / Geométrico Inferior -->
-  <g transform="translate(200, 460)">
-    <line x1="-40" y1="0" x2="-8" y2="0" stroke="${palette.gold}" stroke-width="1" opacity="0.5"/>
-    <circle cx="0" cy="0" r="3" fill="${palette.gold}" opacity="0.8"/>
-    <line x1="8" y1="0" x2="40" y2="0" stroke="${palette.gold}" stroke-width="1" opacity="0.5"/>
+  <g transform="translate(200, 480)">
+    <line x1="-50" y1="0" x2="-10" y2="0" stroke="${palette.gold}" stroke-width="1.2" opacity="0.6"/>
+    <circle cx="0" cy="0" r="3.5" fill="${palette.gold}" opacity="0.9"/>
+    <line x1="10" y1="0" x2="50" y2="0" stroke="${palette.gold}" stroke-width="1.2" opacity="0.6"/>
   </g>
 
-  <!-- Autor do Livro -->
-  <text x="200" y="505" font-family="'Inter', -apple-system, sans-serif" font-size="12" font-weight="600" fill="${palette.subtext}" text-anchor="middle" letter-spacing="2">
+  <!-- Autor do Livro (Maior e mais visível) -->
+  <text x="200" y="525" font-family="'Inter', -apple-system, sans-serif" font-size="15" font-weight="700" fill="${palette.subtext}" text-anchor="middle" letter-spacing="2.5">
     ${escapeXml(safeAuthor.toUpperCase())}
   </text>
 </svg>`;

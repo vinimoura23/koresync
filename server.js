@@ -355,11 +355,19 @@ app.get(['/books/:id/file', '/books/:id/book.epub'], (req, res) => {
 app.get('/books/:id/cover', (req, res) => {
   const book = db.getBook(req.params.id);
 
-  // 1. Se o livro tem uma capa em arquivo físico no disco, servir o arquivo
+  // 1. Se o livro tem uma capa em arquivo físico no disco com extensão de imagem válida
   if (book && book.coverFilename) {
-    const coverPath = path.join(COVERS_DIR, book.coverFilename);
-    if (fs.existsSync(coverPath)) {
-      return res.sendFile(coverPath);
+    const isImageExt = /\.(jpe?g|png|webp|gif|svg)$/i.test(book.coverFilename);
+    if (isImageExt) {
+      const coverPath = path.join(COVERS_DIR, book.coverFilename);
+      if (fs.existsSync(coverPath)) {
+        try {
+          const stats = fs.statSync(coverPath);
+          if (stats.size > 100) {
+            return res.sendFile(coverPath);
+          }
+        } catch (_) {}
+      }
     }
   }
 
