@@ -394,6 +394,24 @@
         </div>
       </div>
 
+      <!-- Seção: Padronização de Capas -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">
+          <span class="material-symbols-outlined">auto_fix_high</span>
+          Capas Oficiais da Biblioteca
+        </h3>
+        <div class="backup-area">
+          <p class="backup-hint">Busca e padroniza as capas de todos os livros da sua biblioteca com as edições oficiais em alta definição da web.</p>
+          <div class="backup-actions">
+            <button id="standardize-covers-btn" class="btn btn-secondary btn-sm">
+              <span class="material-symbols-outlined">travel_explore</span>
+              Buscar Capas Oficiais na Web
+            </button>
+          </div>
+          <div id="standardize-covers-result" class="connection-result hidden"></div>
+        </div>
+      </div>
+
     </div><!-- /.settings-panel -->
   </div><!-- /#settings-modal -->
 
@@ -432,10 +450,16 @@
               </div>
             </div>
             
-            <button type="button" id="edit-cover-btn" class="btn btn-secondary btn-sm edit-cover-btn">
-              <span class="material-symbols-outlined">upload</span>
-              Escolher Imagem
-            </button>
+            <div class="edit-cover-buttons">
+              <button type="button" id="edit-cover-btn" class="btn btn-secondary btn-sm edit-cover-btn">
+                <span class="material-symbols-outlined">upload</span>
+                Escolher Imagem
+              </button>
+              <button type="button" id="edit-cover-fetch-btn" class="btn btn-ghost btn-sm edit-cover-fetch-btn" title="Buscar capa oficial em alta definição na Web">
+                <span class="material-symbols-outlined">travel_explore</span>
+                Buscar na Web
+              </button>
+            </div>
             <input type="file" id="edit-cover-input" accept="image/jpeg,image/png,image/webp" class="hidden-input">
             
             <div class="cover-dimensions-hint">

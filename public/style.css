@@ -2636,10 +2636,36 @@ body.dark-mode .book-tag-pill {
   opacity: 1;
 }
 
+.edit-cover-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
 .edit-cover-btn {
   width: 100%;
   justify-content: center;
   font-weight: 500 !important;
+}
+
+.edit-cover-fetch-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 500 !important;
+  color: var(--google-blue) !important;
+  border-color: rgba(26, 115, 232, 0.3) !important;
+  background: var(--google-blue-light) !important;
+}
+
+.edit-cover-fetch-btn:hover {
+  background: rgba(26, 115, 232, 0.18) !important;
+}
+
+body.dark-mode .edit-cover-fetch-btn {
+  color: #8ab4f8 !important;
+  border-color: rgba(138, 180, 248, 0.3) !important;
+  background: rgba(138, 180, 248, 0.1) !important;
 }
 
 .cover-dimensions-hint {

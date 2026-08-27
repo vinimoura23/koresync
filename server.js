@@ -10,6 +10,7 @@ const AdmZip = require('adm-zip');
 const db = require('./db');
 const { parseEpub } = require('./epub-util');
 const { generateCoverSvg } = require('./cover-generator');
+const { fetchAndApplyCover } = require('./cover-fetcher');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -314,6 +315,14 @@ app.post('/api/books', authMiddleware, upload.array('book', 20), async (req, res
         addedAt: Date.now()
       };
 
+      // Tentar buscar e padronizar com a capa oficial em HD da web
+      try {
+        const onlineResult = await fetchAndApplyCover(bookData, COVERS_DIR);
+        if (onlineResult && onlineResult.success) {
+          bookData.coverFilename = onlineResult.coverFilename;
+        }
+      } catch (_) {}
+
       db.addBook(bookData, req.user.username);
 
       results.push({
@@ -473,6 +482,62 @@ app.put('/api/books/:id', authMiddleware, uploadCover.single('cover'), (req, res
   }
 
   res.json({ success: true, book: updated });
+});
+
+// Buscar Capa Oficial na Web (Apple Books / Open Library / Google Books) para um livro específico
+app.post('/api/books/:id/fetch-cover', authMiddleware, async (req, res) => {
+  const bookId = req.params.id;
+  const book = db.getBook(bookId);
+  if (!book) {
+    return res.status(404).json({ error: 'Livro não encontrado' });
+  }
+
+  try {
+    const result = await fetchAndApplyCover(book, COVERS_DIR);
+    if (!result.success) {
+      return res.status(404).json({ error: result.error || 'Nenhuma capa encontrada online' });
+    }
+
+    db.updateBook(bookId, { coverFilename: result.coverFilename, hasCover: true }, req.user.username);
+    res.json({
+      success: true,
+      coverFilename: result.coverFilename,
+      coverUrl: `/books/${bookId}/cover?t=${Date.now()}`,
+      source: result.source,
+      matchedTitle: result.matchedTitle
+    });
+  } catch (err) {
+    console.error('Erro na rota fetch-cover:', err);
+    res.status(500).json({ error: 'Erro ao buscar capa online' });
+  }
+});
+
+// Padronizar Todas as Capas da Biblioteca com Capas Oficiais na Web
+app.post('/api/library/standardize-covers', authMiddleware, async (req, res) => {
+  const books = db.getBooks(req.user.username);
+  let updatedCount = 0;
+  let skippedCount = 0;
+
+  for (const book of books) {
+    try {
+      const result = await fetchAndApplyCover(book, COVERS_DIR);
+      if (result && result.success) {
+        db.updateBook(book.id, { coverFilename: result.coverFilename, hasCover: true }, req.user.username);
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    } catch (_) {
+      skippedCount++;
+    }
+  }
+
+  res.json({
+    success: true,
+    total: books.length,
+    updated: updatedCount,
+    skipped: skippedCount
+  });
 });
 
 // ==========================================

@@ -254,9 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const editCoverPlaceholder = document.getElementById('edit-cover-placeholder');
   const editCoverInput = document.getElementById('edit-cover-input');
   const editCoverBtn = document.getElementById('edit-cover-btn');
+  const editCoverFetchBtn = document.getElementById('edit-cover-fetch-btn');
   const editBookCloseBtn = document.getElementById('edit-book-close-btn');
   const editBookCancelBtn = document.getElementById('edit-book-cancel-btn');
   const editBookSaveBtn = document.getElementById('edit-book-save-btn');
+  const standardizeCoversBtn = document.getElementById('standardize-covers-btn');
+  const standardizeCoversResult = document.getElementById('standardize-covers-result');
 
   // Helper para escapar HTML e prevenir vulnerabilidades XSS
   function escapeHtml(str) {
@@ -1543,6 +1546,97 @@ document.addEventListener('DOMContentLoaded', () => {
   if (editCoverBtn) {
     editCoverBtn.addEventListener('click', () => {
       if (editCoverInput) editCoverInput.click();
+    });
+  }
+
+  if (editCoverFetchBtn) {
+    editCoverFetchBtn.addEventListener('click', async () => {
+      const bookId = editBookIdInput.value;
+      if (!bookId) return;
+
+      const username = localStorage.getItem('koresync_user');
+      const authKey = localStorage.getItem('koresync_auth_key');
+
+      editCoverFetchBtn.disabled = true;
+      editCoverFetchBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Buscando...';
+
+      try {
+        const res = await fetch(`/api/books/${bookId}/fetch-cover`, {
+          method: 'POST',
+          headers: {
+            'x-auth-user': username,
+            'x-auth-key': authKey
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          editCoverPreviewImg.src = data.coverUrl;
+          editCoverPreviewImg.classList.remove('hidden');
+          editCoverPlaceholder.classList.add('hidden');
+          selectedNewCoverFile = null;
+          showToast(`✅ Capa oficial encontrada via ${data.source}!`, 'success');
+          loadBooks();
+        } else {
+          showToast(`⚠️ ${data.error || 'Nenhuma capa encontrada na web.'}`, 'warning');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Erro de conexão ao buscar capa na web', 'error');
+      } finally {
+        editCoverFetchBtn.disabled = false;
+        editCoverFetchBtn.innerHTML = '<span class="material-symbols-outlined">travel_explore</span> Buscar na Web';
+      }
+    });
+  }
+
+  if (standardizeCoversBtn) {
+    standardizeCoversBtn.addEventListener('click', async () => {
+      const username = localStorage.getItem('koresync_user');
+      const authKey = localStorage.getItem('koresync_auth_key');
+
+      standardizeCoversBtn.disabled = true;
+      standardizeCoversBtn.innerHTML = '<span class="material-symbols-outlined spin-icon">sync</span> Padronizando...';
+      if (standardizeCoversResult) {
+        standardizeCoversResult.classList.remove('hidden');
+        standardizeCoversResult.textContent = 'Buscando e baixando capas oficiais para todos os livros...';
+        standardizeCoversResult.className = 'connection-result';
+      }
+
+      try {
+        const res = await fetch('/api/library/standardize-covers', {
+          method: 'POST',
+          headers: {
+            'x-auth-user': username,
+            'x-auth-key': authKey
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (standardizeCoversResult) {
+            standardizeCoversResult.textContent = `✅ ${data.updated} de ${data.total} capas padronizadas com sucesso!`;
+            standardizeCoversResult.className = 'connection-result ok';
+          }
+          showToast(`Capas padronizadas: ${data.updated} atualizadas!`, 'success');
+          loadBooks();
+        } else {
+          if (standardizeCoversResult) {
+            standardizeCoversResult.textContent = `❌ ${data.error || 'Erro ao padronizar capas'}`;
+            standardizeCoversResult.className = 'connection-result error';
+          }
+          showToast('Erro ao padronizar capas', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        if (standardizeCoversResult) {
+          standardizeCoversResult.textContent = '❌ Erro de conexão ao buscar capas.';
+          standardizeCoversResult.className = 'connection-result error';
+        }
+      } finally {
+        standardizeCoversBtn.disabled = false;
+        standardizeCoversBtn.innerHTML = '<span class="material-symbols-outlined">travel_explore</span> Buscar Capas Oficiais na Web';
+      }
     });
   }
 
