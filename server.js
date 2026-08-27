@@ -9,6 +9,7 @@ const AdmZip = require('adm-zip');
 
 const db = require('./db');
 const { parseEpub } = require('./epub-util');
+const { generateCoverSvg } = require('./cover-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -350,39 +351,27 @@ app.get(['/books/:id/file', '/books/:id/book.epub'], (req, res) => {
   res.sendFile(bookFilePath);
 });
 
-// Obter Capa do Livro
+// Obter Capa do Livro (Capa extraída/customizada ou Capa Inteligente gerada proceduralmente)
 app.get('/books/:id/cover', (req, res) => {
   const book = db.getBook(req.params.id);
-  const serveDefaultCover = () => {
-    res.setHeader('Content-Type', 'image/svg+xml');
-    return res.send(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300">
-  <defs>
-    <linearGradient id="cover-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1a73e8" />
-      <stop offset="100%" stop-color="#1557b0" />
-    </linearGradient>
-  </defs>
-  <rect width="200" height="300" fill="url(#cover-grad)"/>
-  <rect x="10" y="10" width="180" height="280" rx="4" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-  <circle cx="100" cy="120" r="40" fill="rgba(255,255,255,0.1)"/>
-  <path d="M90 100 L110 120 L90 140" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="100" y="210" font-family="'Inter', sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="1">KoreSync</text>
-  <text x="100" y="232" font-family="'Inter', sans-serif" font-size="11" font-weight="400" fill="rgba(255,255,255,0.7)" text-anchor="middle">Sem Capa</text>
-</svg>
-    `);
-  };
 
-  if (!book || !book.coverFilename) {
-    return serveDefaultCover();
+  // 1. Se o livro tem uma capa em arquivo físico no disco, servir o arquivo
+  if (book && book.coverFilename) {
+    const coverPath = path.join(COVERS_DIR, book.coverFilename);
+    if (fs.existsSync(coverPath)) {
+      return res.sendFile(coverPath);
+    }
   }
+
+  // 2. Se o livro não tem arquivo de capa em disco, gerar Smart Cover em SVG vetorial de alta definição
+  const title = book ? book.title : 'Livro KoreSync';
+  const author = book ? book.author : 'KoreSync Library';
+  const id = req.params.id || '';
   
-  const coverPath = path.join(COVERS_DIR, book.coverFilename);
-  if (fs.existsSync(coverPath)) {
-    res.sendFile(coverPath);
-  } else {
-    return serveDefaultCover();
-  }
+  const svg = generateCoverSvg(title, author, id);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svg);
 });
 
 // Remover Livro

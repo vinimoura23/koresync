@@ -816,13 +816,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const hue = (rawTitle.charCodeAt(0) * 12) % 360;
       const letterCoverStyle = `background: linear-gradient(135deg, hsl(${hue}, 60%, 65%), hsl(${(hue+40)%360}, 65%, 45%));`;
       
-      // HTML da Capa (Capa carregada ou Capa gerada em CSS)
+      // HTML da Capa (Capa real ou Smart Cover elegante gerada em SVG)
       const coverUrl = `/books/${book.id}/cover?t=${book.coverFilename || book.addedAt || ''}`;
-      const coverHtml = book.hasCover
-        ? `<img class="book-cover-img" src="${coverUrl}" alt="Capa de ${escapeHtml(rawTitle)}" loading="lazy">`
-        : `<div class="book-cover-letter" style="${letterCoverStyle}">
-             <span class="cover-letter">${escapeHtml(rawTitle.charAt(0).toUpperCase())}</span>
-           </div>`;
+      const coverHtml = `<img class="book-cover-img" src="${coverUrl}" alt="Capa de ${escapeHtml(rawTitle)}" loading="lazy">`;
 
       // Tags / Coleções Pills
       const tagsHtml = (Array.isArray(book.tags) && book.tags.length > 0)
@@ -1510,15 +1506,9 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedNewCoverFile = null;
     if (editCoverInput) editCoverInput.value = '';
 
-    if (book.hasCover) {
-      editCoverPreviewImg.src = `/books/${book.id}/cover?t=${book.coverFilename || Date.now()}`;
-      editCoverPreviewImg.classList.remove('hidden');
-      editCoverPlaceholder.classList.add('hidden');
-    } else {
-      editCoverPreviewImg.src = '';
-      editCoverPreviewImg.classList.add('hidden');
-      editCoverPlaceholder.classList.remove('hidden');
-    }
+    editCoverPreviewImg.src = `/books/${book.id}/cover?t=${book.coverFilename || Date.now()}`;
+    editCoverPreviewImg.classList.remove('hidden');
+    editCoverPlaceholder.classList.add('hidden');
 
     editBookModal.classList.remove('hidden');
     editTitleInput.focus();
