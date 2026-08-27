@@ -319,32 +319,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      // Capturar teclas mesmo com foco dentro do iframe do livro
+      // Rastreamento preciso do cursor para o Guia de Leitura e captura global de teclado
       if (contents.document) {
-        contents.document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            handleEscapeKey();
-          } else if (e.key === 'ArrowLeft') {
-            if (rendition) rendition.prev();
-          } else if (e.key === 'ArrowRight') {
-            if (rendition) rendition.next();
-          } else if (e.key === 'g' || e.key === 'G') {
-            e.preventDefault();
-            toggleReadingGuide();
-          }
-        });
+        contents.document.addEventListener('keydown', handleKeyNavigation, true);
+        if (contents.document.defaultView) {
+          contents.document.defaultView.addEventListener('keydown', handleKeyNavigation, true);
+        }
 
-        // Rastreamento suave do cursor para o Guia de Leitura (Dedo Virtual)
         contents.document.addEventListener('mousemove', (e) => {
           if (!isReadingGuideActive || !readingRuler) return;
           const iframe = contents.document.defaultView ? contents.document.defaultView.frameElement : null;
-          if (!iframe) return;
-          const iframeRect = iframe.getBoundingClientRect();
-          const viewerRect = viewerEl.getBoundingClientRect();
-          const y = (iframeRect.top - viewerRect.top) + e.clientY - 23;
-          readingRuler.style.transform = `translateY(${Math.max(0, y)}px)`;
-          readingRuler.style.opacity = '1';
+          if (iframe) {
+            const iframeRect = iframe.getBoundingClientRect();
+            updateRulerPosition(iframeRect.top + e.clientY);
+          } else {
+            updateRulerPosition(e.clientY);
+          }
         });
 
         contents.document.addEventListener('mouseleave', () => {
@@ -632,17 +622,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  const readerMainEl = document.querySelector('.reader-main');
+
+  // Posicionamento preciso do Guia de Leitura (Dedo Virtual)
+  function updateRulerPosition(clientY) {
+    if (!isReadingGuideActive || !readingRuler || !readerMainEl) return;
+    const mainRect = readerMainEl.getBoundingClientRect();
+    const y = clientY - mainRect.top - 24;
+    readingRuler.style.transform = `translateX(-50%) translateY(${Math.max(0, y)}px)`;
+    readingRuler.style.opacity = '1';
+  }
+
   // Rastreamento do mouse no container principal de leitura
-  if (viewerEl) {
-    viewerEl.addEventListener('mousemove', (e) => {
-      if (!isReadingGuideActive || !readingRuler) return;
-      const viewerRect = viewerEl.getBoundingClientRect();
-      const y = e.clientY - viewerRect.top - 23;
-      readingRuler.style.transform = `translateY(${Math.max(0, y)}px)`;
-      readingRuler.style.opacity = '1';
+  if (readerMainEl) {
+    readerMainEl.addEventListener('mousemove', (e) => {
+      updateRulerPosition(e.clientY);
     });
-    viewerEl.addEventListener('mouseleave', () => {
+    readerMainEl.addEventListener('mouseleave', () => {
       if (isReadingGuideActive && readingRuler) readingRuler.style.opacity = '0';
+    });
+    readerMainEl.addEventListener('mouseenter', () => {
+      if (isReadingGuideActive && readingRuler) readingRuler.style.opacity = '1';
     });
   }
 
@@ -766,20 +766,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Navegação por Teclado (Setas Direita/Esquerda, G para Guia e ESC para sair)
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
+  // Handler centralizado de navegação por teclado (Setas, Espaço, G, F e ESC)
+  function handleKeyNavigation(e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      if (rendition) rendition.prev();
+    } else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault();
+      if (rendition) rendition.next();
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       handleEscapeKey();
-    } else if (e.key === 'ArrowLeft') {
-      if (rendition) rendition.prev();
-    } else if (e.key === 'ArrowRight') {
-      if (rendition) rendition.next();
     } else if (e.key === 'g' || e.key === 'G') {
       e.preventDefault();
       toggleReadingGuide();
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      if (fullscreenToggleBtn) fullscreenToggleBtn.click();
     }
-  });
+  }
+
+  // Captura global de teclado em fase de captura para não perder teclas
+  window.addEventListener('keydown', handleKeyNavigation, true);
+  document.addEventListener('keydown', handleKeyNavigation, true);
 
   // Controle de Tamanho da Fonte
   fontIncreaseBtn.addEventListener('click', () => {

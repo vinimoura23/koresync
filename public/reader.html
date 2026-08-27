@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
   
   <!-- Estilo do leitor (será complementado pelo style.css principal) -->
-  <link rel="stylesheet" href="style.css?v=2.3">
+  <link rel="stylesheet" href="style.css?v=2.4">
   
   <!-- CDNs do EpubJS e JSZip (Locais para suporte 100% offline) -->
   <script src="jszip.min.js"></script>
@@ -83,20 +83,20 @@
 
   <!-- Container Principal de Leitura -->
   <main class="reader-main">
+    <!-- Régua de Foco / Guia de Leitura (Dedo Virtual) -->
+    <div id="reading-ruler" class="reading-ruler hidden">
+      <div class="ruler-line-top"></div>
+      <div class="ruler-highlight"></div>
+      <div class="ruler-line-bottom"></div>
+    </div>
+
     <!-- Botão Anterior -->
     <button id="prev-btn" class="nav-arrow prev" title="Página Anterior">
       <span class="material-symbols-outlined">chevron_left</span>
     </button>
     
     <!-- Área de Visualização do EpubJS -->
-    <div id="viewer" class="reader-viewer">
-      <!-- Régua de Foco / Guia de Leitura (Dedo Virtual) -->
-      <div id="reading-ruler" class="reading-ruler hidden">
-        <div class="ruler-line-top"></div>
-        <div class="ruler-highlight"></div>
-        <div class="ruler-line-bottom"></div>
-      </div>
-    </div>
+    <div id="viewer" class="reader-viewer"></div>
     
     <!-- Botão Próximo -->
     <button id="next-btn" class="nav-arrow next" title="Próxima Página">
@@ -148,6 +148,6 @@
   <!-- CONTAINER DE TOAST NOTIFICATIONS -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="reader.js?v=2.3"></script>
+  <script src="reader.js?v=2.4"></script>
 </body>
 </html>

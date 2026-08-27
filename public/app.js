@@ -357,18 +357,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const opdsUrlEl = document.getElementById('koreader-opds-url');
 
   let booksList = [];
-  let currentSort = 'date-desc'; // padrão: mais recentes primeiro
+  let currentSort = localStorage.getItem('koresync_sort') || 'date-desc';
   let activeTagFilter = null;
   let hideUnread = false;
 
-  // ---- Funções de Ordenação ----
+  // ---- Funções de Ordenação (com Ordenação Natural Numérica) ----
   function sortBooks(books, sort) {
     const sorted = [...books];
     switch (sort) {
       case 'title-asc':
-        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+        return sorted.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR', { numeric: true, sensitivity: 'base' }));
       case 'title-desc':
-        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'pt-BR'));
+        return sorted.sort((a, b) => (b.title || '').localeCompare(a.title || '', 'pt-BR', { numeric: true, sensitivity: 'base' }));
       case 'progress-desc':
         return sorted.sort((a, b) => {
           const pA = a.progress ? a.progress.percentage : -1;
@@ -479,10 +479,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Eventos dos botões de ordenação
   document.querySelectorAll('.sort-btn').forEach(btn => {
+    if (btn.getAttribute('data-sort') === currentSort) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentSort = btn.getAttribute('data-sort');
+      localStorage.setItem('koresync_sort', currentSort);
       renderBooks(getFilteredBooks());
     });
   });
@@ -888,9 +894,26 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
+      // Abertura do leitor com pedido de tela cheia no gesto do usuário
+      const openReader = () => {
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {}).finally(() => {
+            window.location.href = `reader.html?id=${book.id}`;
+          });
+        } else {
+          window.location.href = `reader.html?id=${book.id}`;
+        }
+      };
+
       // Eventos dos botões do card
-      card.querySelector('.read-btn').addEventListener('click', () => {
-        window.location.href = `reader.html?id=${book.id}`;
+      card.querySelector('.read-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openReader();
+      });
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.book-card-actions') || e.target.closest('.book-tag-pill') || e.target.closest('.overlay-btn')) return;
+        openReader();
       });
 
       card.querySelector('.edit-btn').addEventListener('click', (e) => {

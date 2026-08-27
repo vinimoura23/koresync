@@ -1449,16 +1449,23 @@ body.theme-sepia .percentage-badge {
    ========================================== */
 .reading-ruler {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 46px;
-  pointer-events: none;
-  z-index: 15;
-  transition: transform 0.05s ease-out, opacity 0.2s ease;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  width: calc(100% - 104px);
+  max-width: 760px;
+  height: 48px;
+  pointer-events: none !important;
+  z-index: 1000;
+  transition: transform 0.04s ease-out, opacity 0.15s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.reader-viewer.spread-layout ~ .reading-ruler,
+.spread-layout + .reading-ruler,
+.spread-layout .reading-ruler {
+  max-width: 1400px;
 }
 
 .reading-ruler.hidden {
@@ -1468,49 +1475,49 @@ body.theme-sepia .percentage-badge {
 .ruler-highlight {
   position: absolute;
   inset: 0;
-  background: rgba(26, 115, 232, 0.07);
+  background: rgba(26, 115, 232, 0.09);
   border-radius: 4px;
 }
 
 .ruler-line-top {
   position: absolute;
   top: 0;
-  left: 5%;
-  right: 5%;
+  left: 2%;
+  right: 2%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.4), transparent);
 }
 
 .ruler-line-bottom {
   position: absolute;
   bottom: 0;
-  left: 4%;
-  right: 4%;
+  left: 1%;
+  right: 1%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.6), transparent);
-  box-shadow: 0 1px 4px rgba(26, 115, 232, 0.2);
+  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.8), transparent);
+  box-shadow: 0 1px 6px rgba(26, 115, 232, 0.35);
 }
 
 body.theme-sepia .ruler-highlight {
-  background: rgba(141, 110, 99, 0.12);
+  background: rgba(141, 110, 99, 0.14);
 }
 body.theme-sepia .ruler-line-top {
-  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.45), transparent);
 }
 body.theme-sepia .ruler-line-bottom {
-  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.75), transparent);
-  box-shadow: 0 1px 4px rgba(141, 110, 99, 0.2);
+  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.85), transparent);
+  box-shadow: 0 1px 6px rgba(141, 110, 99, 0.3);
 }
 
 body.theme-dark .ruler-highlight {
-  background: rgba(138, 180, 248, 0.1);
+  background: rgba(138, 180, 248, 0.14);
 }
 body.theme-dark .ruler-line-top {
-  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.35), transparent);
 }
 body.theme-dark .ruler-line-bottom {
-  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.65), transparent);
-  box-shadow: 0 1px 4px rgba(138, 180, 248, 0.3);
+  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.85), transparent);
+  box-shadow: 0 1px 8px rgba(138, 180, 248, 0.45);
 }
 
 #reading-guide-btn.active {
