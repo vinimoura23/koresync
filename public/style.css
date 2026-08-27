@@ -275,6 +275,105 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ==========================================
+   PAINEL DE LOGIN RÁPIDO (PERFIL SALVO)
+   ========================================== */
+.saved-profile-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.saved-profile-avatar-wrapper {
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.saved-profile-avatar {
+  width: 84px !important;
+  height: 84px !important;
+  font-size: 32px !important;
+  border: 3px solid var(--white);
+  box-shadow: 0 6px 20px rgba(26, 115, 232, 0.28);
+  margin: 0 auto;
+}
+
+.saved-profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 4px 0;
+}
+
+.saved-profile-hint {
+  font-size: 13px;
+  color: var(--text-gray);
+  margin: 0 0 20px 0;
+}
+
+.saved-profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  width: 100%;
+  border-top: 1px solid var(--google-gray-border);
+  padding-top: 16px;
+}
+
+.text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--google-blue);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.text-btn:hover {
+  background: rgba(26, 115, 232, 0.08);
+}
+
+.text-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.text-btn-muted {
+  color: var(--text-gray) !important;
+  font-size: 12px !important;
+}
+
+.text-btn-muted:hover {
+  color: var(--danger-red) !important;
+  background: rgba(217, 48, 37, 0.08) !important;
+}
+
+body.dark-mode .saved-profile-avatar {
+  border-color: #202124;
+  box-shadow: 0 6px 20px rgba(138, 180, 248, 0.35);
+}
+
+body.dark-mode .saved-profile-actions {
+  border-color: #333;
+}
+
+body.dark-mode .text-btn {
+  color: #8ab4f8;
+}
+
+body.dark-mode .text-btn:hover {
+  background: rgba(138, 180, 248, 0.12);
+}
+
 .btn-full {
   width: 100%;
   margin-top: 8px;

@@ -24,8 +24,16 @@ if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// Servir arquivos estáticos do frontend
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir arquivos estáticos do frontend com controle de cache estrito
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  }
+}));
 
 // Configurar o Multer para upload temporário
 const upload = multer({

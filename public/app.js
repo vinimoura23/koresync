@@ -180,10 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const authError = document.getElementById('auth-error');
 
   // Abas
+  const authTabs = document.getElementById('auth-tabs');
   const tabLogin = document.getElementById('tab-login');
   const tabRegister = document.getElementById('tab-register');
   const panelLogin = document.getElementById('panel-login');
   const panelRegister = document.getElementById('panel-register');
+
+  // Painel de Perfil Salvo (Login Rápido estilo Facebook)
+  const panelSavedProfile = document.getElementById('panel-saved-profile');
+  const savedProfileAvatar = document.getElementById('saved-profile-avatar');
+  const savedProfileAvatarImg = document.getElementById('saved-profile-avatar-img');
+  const savedProfileAvatarInitials = document.getElementById('saved-profile-avatar-initials');
+  const savedProfileName = document.getElementById('saved-profile-name');
+  const savedProfileSubname = document.getElementById('saved-profile-subname');
+  const savedProfileForm = document.getElementById('saved-profile-form');
+  const savedProfilePasswordInput = document.getElementById('saved-profile-password');
+  const switchAccountBtn = document.getElementById('switch-account-btn');
+  const forgetAccountBtn = document.getElementById('forget-account-btn');
 
   // Formulário de Login
   const loginForm = document.getElementById('login-form');
@@ -603,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Login OK
         localStorage.setItem('koresync_user', username);
         localStorage.setItem('koresync_auth_key', passwordHash);
+        localStorage.setItem('koresync_saved_profile', username);
         showMainScreen(username);
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -614,6 +628,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper para carregar avatar na tela de login de perfil salvo
+  function loadSavedProfileAvatar(username) {
+    if (!savedProfileAvatarImg || !savedProfileAvatarInitials) return;
+    const avatarData = localStorage.getItem(`koresync_avatar_${username.toLowerCase()}`);
+    if (avatarData) {
+      savedProfileAvatarImg.src = avatarData;
+      savedProfileAvatarImg.classList.remove('hidden');
+      savedProfileAvatarInitials.classList.add('hidden');
+      if (savedProfileAvatar) savedProfileAvatar.classList.add('has-custom-img');
+    } else {
+      savedProfileAvatarImg.src = '';
+      savedProfileAvatarImg.classList.add('hidden');
+      savedProfileAvatarInitials.textContent = (username || '?').slice(0, 2).toUpperCase();
+      savedProfileAvatarInitials.classList.remove('hidden');
+      if (savedProfileAvatar) savedProfileAvatar.classList.remove('has-custom-img');
+    }
+  }
+
+  // Ações do Formulário de Perfil Salvo (Login Rápido estilo Facebook)
+  if (savedProfileForm) {
+    savedProfileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!savedProfileForm.reportValidity()) return;
+      const username = localStorage.getItem('koresync_saved_profile');
+      if (!username) {
+        showAuthScreen(true);
+        return;
+      }
+      const passwordHash = md5(savedProfilePasswordInput.value);
+      await handleAuth('/users/auth', username, passwordHash, false);
+    });
+  }
+
+  if (switchAccountBtn) {
+    switchAccountBtn.addEventListener('click', () => {
+      showAuthScreen(true);
+    });
+  }
+
+  if (forgetAccountBtn) {
+    forgetAccountBtn.addEventListener('click', () => {
+      localStorage.removeItem('koresync_saved_profile');
+      showAuthScreen(true);
+      showToast('Conta removida deste dispositivo.', 'info', 3000);
+    });
+  }
+
   // Logout
   logoutBtn.addEventListener('click', () => {
     localStorage.removeItem('koresync_user');
@@ -623,13 +684,40 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Mostra Telas
-  function showAuthScreen() {
+  function showAuthScreen(forceSwitch = false) {
     authScreen.classList.remove('hidden');
     mainScreen.classList.add('hidden');
     loginPasswordInput.value = '';
     regPasswordInput.value = '';
     regConfirmInput.value = '';
-    switchTab('login');
+    if (savedProfilePasswordInput) savedProfilePasswordInput.value = '';
+
+    const savedProfile = localStorage.getItem('koresync_saved_profile');
+
+    if (savedProfile && !forceSwitch && panelSavedProfile) {
+      // Mostrar Painel de Perfil Salvo (Facebook / Google style)
+      if (authTabs) authTabs.classList.add('hidden');
+      panelLogin.classList.add('hidden');
+      panelRegister.classList.add('hidden');
+      panelSavedProfile.classList.remove('hidden');
+
+      if (savedProfileName) savedProfileName.textContent = savedProfile;
+      if (savedProfileSubname) savedProfileSubname.textContent = savedProfile;
+
+      loadSavedProfileAvatar(savedProfile);
+
+      setTimeout(() => {
+        if (savedProfilePasswordInput) savedProfilePasswordInput.focus();
+      }, 100);
+    } else {
+      // Mostrar tela de login/cadastro padrão
+      if (panelSavedProfile) panelSavedProfile.classList.add('hidden');
+      if (authTabs) authTabs.classList.remove('hidden');
+      switchTab('login');
+      setTimeout(() => {
+        loginUsernameInput.focus();
+      }, 100);
+    }
   }
 
   function showMainScreen(username) {
@@ -1152,6 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok && data.success) {
           if (isUsernameChanged) {
             localStorage.setItem('koresync_user', data.username);
+            localStorage.setItem('koresync_saved_profile', data.username);
             userNameDisplay.textContent = data.username;
           }
           if (isPasswordChanged) {

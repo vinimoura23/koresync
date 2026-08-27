@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
   
   <!-- Estilo Principal -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.3">
 </head>
 <body>
 
@@ -24,8 +24,43 @@
         <p>Unifique a biblioteca do seu Kindle &amp; KOReader</p>
       </div>
 
+      <!-- Painel de Login Rápido (Perfil Salvo estilo Facebook/Google) -->
+      <div id="panel-saved-profile" class="auth-panel hidden">
+        <div class="saved-profile-box">
+          <div class="saved-profile-avatar-wrapper">
+            <div id="saved-profile-avatar" class="user-avatar saved-profile-avatar">
+              <img id="saved-profile-avatar-img" class="hidden" alt="Foto de Perfil">
+              <span id="saved-profile-avatar-initials">U</span>
+            </div>
+          </div>
+          <h3 id="saved-profile-name" class="saved-profile-name">Usuário</h3>
+          <p class="saved-profile-hint">Digite sua senha para entrar</p>
+
+          <form id="saved-profile-form" class="auth-form">
+            <div class="input-group">
+              <label for="saved-profile-password">Senha</label>
+              <input type="password" id="saved-profile-password" placeholder="Digite sua senha" required autocomplete="current-password">
+            </div>
+            <button type="submit" id="saved-profile-submit-btn" class="btn btn-primary btn-full">
+              <span class="material-symbols-outlined">login</span>
+              Entrar
+            </button>
+          </form>
+
+          <div class="saved-profile-actions">
+            <button type="button" id="switch-account-btn" class="text-btn">
+              <span class="material-symbols-outlined">switch_account</span>
+              Entrar com outra conta
+            </button>
+            <button type="button" id="forget-account-btn" class="text-btn text-btn-muted" title="Remover esta conta salva deste navegador">
+              Remover conta salva
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Abas de Login / Cadastro -->
-      <div class="auth-tabs" role="tablist">
+      <div id="auth-tabs" class="auth-tabs" role="tablist">
         <button id="tab-login" class="auth-tab active" role="tab" aria-selected="true" aria-controls="panel-login">Entrar</button>
         <button id="tab-register" class="auth-tab" role="tab" aria-selected="false" aria-controls="panel-register">Criar Conta</button>
       </div>
@@ -470,6 +505,6 @@
   <!-- CONTAINER DE TOAST NOTIFICATIONS -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>
