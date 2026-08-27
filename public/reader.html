@@ -68,6 +68,9 @@
 
       <!-- Controles de Visualização -->
       <div class="view-controls">
+        <button id="reading-guide-btn" class="icon-btn" title="Guia de Leitura / Régua de Foco (Tecla G)">
+          <span class="material-symbols-outlined">rule</span>
+        </button>
         <button id="layout-toggle" class="icon-btn" title="Alternar Página Única / Dupla">
           <span class="material-symbols-outlined">menu_book</span>
         </button>
@@ -86,7 +89,14 @@
     </button>
     
     <!-- Área de Visualização do EpubJS -->
-    <div id="viewer" class="reader-viewer"></div>
+    <div id="viewer" class="reader-viewer">
+      <!-- Régua de Foco / Guia de Leitura (Dedo Virtual) -->
+      <div id="reading-ruler" class="reading-ruler hidden">
+        <div class="ruler-line-top"></div>
+        <div class="ruler-highlight"></div>
+        <div class="ruler-line-bottom"></div>
+      </div>
+    </div>
     
     <!-- Botão Próximo -->
     <button id="next-btn" class="nav-arrow next" title="Próxima Página">
@@ -95,13 +105,22 @@
   </main>
 
   <!-- Barra de Progresso e Navegação Inferior -->
-  <footer class="reader-footer">
-    <div class="progress-bar-container">
+  <footer class="reader-footer" id="reader-footer">
+    <div class="progress-bar-container" id="reader-progress-track" title="Progresso geral da leitura">
       <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+      <div id="progress-bar-thumb" class="progress-bar-thumb"></div>
     </div>
     <div class="footer-info">
-      <span id="page-indicator">Carregando páginas...</span>
-      <span id="percentage-indicator">0%</span>
+      <div class="footer-left-info">
+        <span id="chapter-indicator" class="chapter-indicator">Início</span>
+      </div>
+      <div class="footer-center-info">
+        <span id="reading-time-indicator" class="reading-time-indicator"></span>
+      </div>
+      <div class="footer-right-info">
+        <span id="page-indicator">Calculando...</span>
+        <span id="percentage-indicator" class="percentage-badge">0%</span>
+      </div>
     </div>
   </footer>
 

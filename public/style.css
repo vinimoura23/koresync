@@ -1390,12 +1390,142 @@ body.dark-mode .backup-warning {
 .footer-info {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   color: var(--text-gray);
+  gap: 16px;
 }
 
-#percentage-indicator {
-  font-weight: 600;
+.footer-left-info {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter-indicator {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+body.theme-dark .chapter-indicator {
+  color: #e8eaed;
+}
+
+body.theme-sepia .chapter-indicator {
+  color: #3e2723;
+}
+
+.footer-center-info {
+  font-size: 11px;
+  color: var(--text-gray);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.footer-right-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.percentage-badge {
+  font-weight: 700;
+  color: var(--google-blue);
+}
+
+body.theme-dark .percentage-badge {
+  color: #8ab4f8;
+}
+
+body.theme-sepia .percentage-badge {
+  color: #5d4037;
+}
+
+/* ==========================================
+   RÉGUA DE FOCO / GUIA DE LEITURA (DEDO VIRTUAL)
+   ========================================== */
+.reading-ruler {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46px;
+  pointer-events: none;
+  z-index: 15;
+  transition: transform 0.05s ease-out, opacity 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.reading-ruler.hidden {
+  display: none !important;
+}
+
+.ruler-highlight {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 115, 232, 0.07);
+  border-radius: 4px;
+}
+
+.ruler-line-top {
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.3), transparent);
+}
+
+.ruler-line-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 4%;
+  right: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.6), transparent);
+  box-shadow: 0 1px 4px rgba(26, 115, 232, 0.2);
+}
+
+body.theme-sepia .ruler-highlight {
+  background: rgba(141, 110, 99, 0.12);
+}
+body.theme-sepia .ruler-line-top {
+  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.35), transparent);
+}
+body.theme-sepia .ruler-line-bottom {
+  background: linear-gradient(90deg, transparent, rgba(141, 110, 99, 0.75), transparent);
+  box-shadow: 0 1px 4px rgba(141, 110, 99, 0.2);
+}
+
+body.theme-dark .ruler-highlight {
+  background: rgba(138, 180, 248, 0.1);
+}
+body.theme-dark .ruler-line-top {
+  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.25), transparent);
+}
+body.theme-dark .ruler-line-bottom {
+  background: linear-gradient(90deg, transparent, rgba(138, 180, 248, 0.65), transparent);
+  box-shadow: 0 1px 4px rgba(138, 180, 248, 0.3);
+}
+
+#reading-guide-btn.active {
+  background-color: var(--google-blue-light);
+  color: var(--google-blue);
+}
+
+body.theme-dark #reading-guide-btn.active {
+  background-color: rgba(138, 180, 248, 0.2);
+  color: #8ab4f8;
+}
+
+body.theme-sepia #reading-guide-btn.active {
+  background-color: rgba(141, 110, 99, 0.2);
+  color: #3e2723;
 }
 
 /* ==========================================

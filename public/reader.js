@@ -56,11 +56,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const progressBarFill = document.getElementById('progress-bar-fill');
   const percentageIndicator = document.getElementById('percentage-indicator');
   const pageIndicator = document.getElementById('page-indicator');
+  const chapterIndicator = document.getElementById('chapter-indicator');
+  const readingTimeIndicator = document.getElementById('reading-time-indicator');
+  const readerProgressTrack = document.getElementById('reader-progress-track');
   const fontDecreaseBtn = document.getElementById('font-decrease');
   const fontIncreaseBtn = document.getElementById('font-increase');
   const viewerEl = document.getElementById('viewer');
   const layoutToggleBtn = document.getElementById('layout-toggle');
   const fullscreenToggleBtn = document.getElementById('fullscreen-toggle');
+  const readingGuideBtn = document.getElementById('reading-guide-btn');
+  const readingRuler = document.getElementById('reading-ruler');
 
   // Referências do TOC (Sumário)
   const tocBtn = document.getElementById('toc-btn');
@@ -81,6 +86,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   let saveProgressTimeout = null;
   let initialLocationLoaded = false;
   let serverProgress = null;
+  let isReadingGuideActive = localStorage.getItem('koresync_reading_guide') === 'true';
+
+  // Inicializar estado do Guia de Leitura
+  updateReadingGuideUI();
+
+  function updateReadingGuideUI() {
+    if (readingGuideBtn && readingRuler) {
+      if (isReadingGuideActive) {
+        readingGuideBtn.classList.add('active');
+        readingRuler.classList.remove('hidden');
+        localStorage.setItem('koresync_reading_guide', 'true');
+      } else {
+        readingGuideBtn.classList.remove('active');
+        readingRuler.classList.add('hidden');
+        localStorage.setItem('koresync_reading_guide', 'false');
+      }
+    }
+  }
+
+  function toggleReadingGuide() {
+    isReadingGuideActive = !isReadingGuideActive;
+    updateReadingGuideUI();
+    showToast(isReadingGuideActive ? '👆 Guia de Leitura ativado' : 'Guia de Leitura desativado', 'info', 2000);
+  }
+
+  if (readingGuideBtn) {
+    readingGuideBtn.addEventListener('click', toggleReadingGuide);
+  }
 
   // Atualizar botão de layout inicial
   updateLayoutButton();
@@ -296,6 +329,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (rendition) rendition.prev();
           } else if (e.key === 'ArrowRight') {
             if (rendition) rendition.next();
+          } else if (e.key === 'g' || e.key === 'G') {
+            e.preventDefault();
+            toggleReadingGuide();
+          }
+        });
+
+        // Rastreamento suave do cursor para o Guia de Leitura (Dedo Virtual)
+        contents.document.addEventListener('mousemove', (e) => {
+          if (!isReadingGuideActive || !readingRuler) return;
+          const iframe = contents.document.defaultView ? contents.document.defaultView.frameElement : null;
+          if (!iframe) return;
+          const iframeRect = iframe.getBoundingClientRect();
+          const viewerRect = viewerEl.getBoundingClientRect();
+          const y = (iframeRect.top - viewerRect.top) + e.clientY - 23;
+          readingRuler.style.transform = `translateY(${Math.max(0, y)}px)`;
+          readingRuler.style.opacity = '1';
+        });
+
+        contents.document.addEventListener('mouseleave', () => {
+          if (isReadingGuideActive && readingRuler) {
+            readingRuler.style.opacity = '0';
+          }
+        });
+
+        contents.document.addEventListener('mouseenter', () => {
+          if (isReadingGuideActive && readingRuler) {
+            readingRuler.style.opacity = '1';
           }
         });
       }
@@ -572,19 +632,107 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Atualizar indicadores visuais de progresso
-  function updateProgressIndicators() {
-    const pct = Math.round(currentPercentage * 100);
-    progressBarFill.style.width = `${pct}%`;
-    percentageIndicator.textContent = `${pct}%`;
+  // Rastreamento do mouse no container principal de leitura
+  if (viewerEl) {
+    viewerEl.addEventListener('mousemove', (e) => {
+      if (!isReadingGuideActive || !readingRuler) return;
+      const viewerRect = viewerEl.getBoundingClientRect();
+      const y = e.clientY - viewerRect.top - 23;
+      readingRuler.style.transform = `translateY(${Math.max(0, y)}px)`;
+      readingRuler.style.opacity = '1';
+    });
+    viewerEl.addEventListener('mouseleave', () => {
+      if (isReadingGuideActive && readingRuler) readingRuler.style.opacity = '0';
+    });
+  }
 
-    // Atualizar indicador de páginas / capítulos
+  // Helper para localizar o nome amigável do capítulo no sumário
+  function getChapterName(href) {
+    if (!book || !book.navigation || !book.navigation.toc) return null;
+    
+    function searchToc(items) {
+      for (const item of items) {
+        if (item.href && href && (item.href.includes(href) || href.includes(item.href))) {
+          return item.label ? item.label.trim() : null;
+        }
+        if (item.subitems && item.subitems.length > 0) {
+          const found = searchToc(item.subitems);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    return searchToc(book.navigation.toc);
+  }
+
+  // Atualizar indicadores visuais de progresso contínuo e tempo estimado
+  function updateProgressIndicators() {
+    const pct = Math.max(0, Math.min(100, Math.round(currentPercentage * 100)));
+    if (progressBarFill) progressBarFill.style.width = `${pct}%`;
+    if (percentageIndicator) percentageIndicator.textContent = `${pct}%`;
+
+    // Atualizar indicador de páginas / capítulos e estimativa de leitura
     if (rendition && rendition.location) {
       const start = rendition.location.start;
       const index = start.index + 1;
       const total = book.spine.spineItems ? book.spine.spineItems.length : 0;
-      pageIndicator.textContent = `Capítulo ${index} de ${total}`;
+      
+      if (pageIndicator) {
+        pageIndicator.textContent = `Capítulo ${index} de ${total}`;
+      }
+
+      // Identificar título real do capítulo
+      const realChapterName = getChapterName(start.href);
+      if (chapterIndicator) {
+        chapterIndicator.textContent = realChapterName || `Capítulo ${index}`;
+        chapterIndicator.title = realChapterName ? `${realChapterName} (Capítulo ${index} de ${total})` : `Capítulo ${index} de ${total}`;
+      }
+
+      // Estimar tempo restante no livro (baseado em média de leitura de ~230 palavras/min)
+      if (readingTimeIndicator && book.locations && book.locations.length > 0) {
+        const remainingPct = 1 - currentPercentage;
+        // Média de ~180 páginas / 60.000 palavras por livro = ~260 minutos de leitura total
+        const estimatedTotalMinutes = Math.max(15, total * 6);
+        const remainingMinutes = Math.round(remainingPct * estimatedTotalMinutes);
+        
+        if (remainingMinutes <= 1) {
+          readingTimeIndicator.textContent = '⏱️ Menos de 1 min restante';
+        } else if (remainingMinutes < 60) {
+          readingTimeIndicator.textContent = `⏱️ ~${remainingMinutes} min restantes no livro`;
+        } else {
+          const hours = Math.floor(remainingMinutes / 60);
+          const mins = remainingMinutes % 60;
+          readingTimeIndicator.textContent = `⏱️ ~${hours}h ${mins > 0 ? mins + 'm' : ''} restantes`;
+        }
+      }
     }
+  }
+
+  // Clique na barra de progresso para saltar para ponto aproximado do livro
+  if (readerProgressTrack) {
+    readerProgressTrack.addEventListener('click', async (e) => {
+      if (!book || !rendition) return;
+      const rect = readerProgressTrack.getBoundingClientRect();
+      const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      
+      try {
+        if (book.locations && book.locations.length > 0) {
+          const targetCfi = book.locations.cfiFromPercentage(clickRatio);
+          if (targetCfi) {
+            await rendition.display(targetCfi);
+          }
+        } else if (book.spine && book.spine.spineItems) {
+          const targetIndex = Math.floor(clickRatio * book.spine.spineItems.length);
+          const item = book.spine.get(targetIndex);
+          if (item) {
+            await rendition.display(item.href);
+          }
+        }
+      } catch (seekErr) {
+        console.warn('Erro ao saltar na barra de progresso:', seekErr);
+      }
+    });
   }
 
   // Helper para atualizar visualmente o status da sincronização
@@ -618,7 +766,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Navegação por Teclado (Setas Direita/Esquerda e ESC para sair)
+  // Navegação por Teclado (Setas Direita/Esquerda, G para Guia e ESC para sair)
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -627,6 +775,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (rendition) rendition.prev();
     } else if (e.key === 'ArrowRight') {
       if (rendition) rendition.next();
+    } else if (e.key === 'g' || e.key === 'G') {
+      e.preventDefault();
+      toggleReadingGuide();
     }
   });
 
